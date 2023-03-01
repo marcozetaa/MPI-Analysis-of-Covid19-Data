@@ -2,125 +2,47 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
+#include <stdbool.h>
 
 #define MAX_LINE_LEN 1024
-#define DAYS 5
+#define NUM_COUNTRIES 214
 
-//Hash table entry
+/*------------------Master's data structures--------------*/
 typedef struct {
-    char* key;
-    int value;
-} Entry;
+    char* countryName;
+    //TODO: here we'll save the aggregated data for the country
+} CountryResults;
 
 // Hash table
 typedef struct {
-    int count;
-    int size;
-    Entry* entries;
-} HashTable;
+    int count; //total number of countries
+    CountryResults* countries;
+} SlaveData;
 
-// creation of hash key
-unsigned long create_key(char *str) {
-    unsigned long hash = 5381;
-    int c;
-    while ((c = *str++) != '\0') {
-        hash = ((hash << 5) + hash) + c;
-    }
-    return hash;
-}
+/*------------------Slaves' data structures--------------*/
+typedef struct {
+    int day, month, year;
+    int cases,deaths;
+    char* countryterritoryCode; //lo salviamo per avere una key per i selection
+}dati;
 
-// If the key is not in the table, it dinamically creates a new entry
-// and if the size of the entry reach the 70% of the total size
-// id dinamically doubles the size of the hash table in order to
-// avoid a bigger number of collision
-void hash_table_put(HashTable* ht, const char* key, int value) {
+typedef struct {
+    char* countryName;
+    dati inputData[365]; //saves all the data in the file
+    int i;  //used during the computations: keeps count of where in inputData we are at
+} Country;
 
-    if (ht->entries == NULL) {
-        ht->size = 100; // Value to set so that the number of collision is minimum
-        ht->count = 0;
-        ht->entries = (Entry*) malloc(ht->size * sizeof(Entry));
-        memset(ht->entries, 0, ht->size * sizeof(Entry));
-    }
+// Hash table
+typedef struct {
+    int count; //number of countries in the slave
+    Country* countries;
+    //char* top10[10]; //TODO
 
-    unsigned long hash = create_key(key);
-    int index = hash % ht->size;
-    int i = 1;
+} SlaveData;
 
-    while (ht->entries[index].key != NULL) {
-        if (strcmp(ht->entries[index].key, key) == 0) {
-            ht->entries[index].value = value;
-            return;
-        }
+/*---------------------------FUNCTIONS--------------------*/
 
-        index = (hash + i * i) % ht->size;
-        i++;
-    }
-
-    ht->entries[index].key = strdup(key);
-    ht->entries[index].value = value;
-    ht->count++;
-
-    if (ht->count >= 0.7 * ht->size) {
-        int new_size = 2 * ht->size;
-        Entry* new_entries = (Entry*) calloc(new_size, sizeof(Entry));
-
-        for (int i = 0; i < ht->size; i++) {
-            if (ht->entries[i].key != NULL) {
-                unsigned long hash = create_key(ht->entries[i].key);
-                int index = hash % new_size;
-                int j = 1;
-
-                while (new_entries[index].key != NULL) {
-                    index = (hash + j * j) % new_size;
-                    j++;
-                }
-
-                new_entries[index].key = ht->entries[i].key;
-                new_entries[index].value = ht->entries[i].value;
-            }
-        }
-
-        free(ht->entries);
-        ht->entries = new_entries;
-        ht->size = new_size;
-    }
-}
-
-int hash_table_get(HashTable* ht, const char* key) {
-    unsigned long hash = create_key(key);
-    int index = hash % ht->size;
-    int i = 1;
-
-    while (ht->entries[index].key != NULL) {
-        if (strcmp(ht->entries[index].key, key) == 0) {
-            return ht->entries[index].value;
-        }
-
-        index = (hash + i * i) % ht->size;
-        i++;
-    }
-
-    return -1;
-}
-
-// get csv columns[num]
-const char* getfield(char* line, int num) {
-
-    char* aux = line;
-    const char* tok;
-
-    printf("Filed took = %s\n",aux);
-
-    for (tok = strtok(aux, ",");
-         tok && *tok;
-         tok = strtok(NULL, ",\n"))
-    {
-        if (!--num)
-            return tok;
-    }
-    return NULL;
-}
-
+/*---------------------------MAIN--------------------*/
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv); // Initialize MPI
 
@@ -129,8 +51,12 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size); // Total number of processes
 
     int num_slaves = size - 1;
+    int countriesPerSlave = (NUM_COUNTRIES/num_slaves) + 1; //+1 just to round up
 
-    if (rank == 0) { // If the current process is the master
+    SlaveData slaveData;
+
+    
+    if (rank == 0) { //master
 
         FILE *fp = fopen("files/input.csv", "r");
         if (fp == NULL) {
@@ -179,21 +105,42 @@ int main(int argc, char **argv) {
         // TODO: gestire il ritorno dei valori che poi andranno stampati e usati per il calcolo della top 10
 
 
-    } else { // If the current process is a slave
+    } else { //slaves
+        bool end = false; //flag to identify when the slave has received all the data from 1 country
+        bool totalEnd = false; //flag to identify when the data transfer from the master is over (no more countries to be received)
         char line[MAX_LINE_LEN]; // Buffer to receive the line
+        int countryIndex; //to know where we are in the index
 
-        float buffer[DAYS] = {0}; // circular buffer
+        /*float buffer[DAYS] = {0}; // circular buffer
         int index = 0; // index of the oldest element in the buffer
         int count = 0; // number of elements in the buffer
-        float value;
+        float value;*/
 
-        while (1) { // Loop indefinitely
-            MPI_Recv(line, MAX_LINE_LEN, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            if (strncmp(line, "end", 3) == 0) { // If the line is "end"
-                break;
+        slaveData.count = 0;
+        slaveData.countries = malloc(sizeof(Country)*countriesPerSlave);
+        for(int i=0;i<countriesPerSlave;i++){
+            slaveData.countries[i].countryName = malloc(sizeof(char)*50);
+        }
+
+        while (!totalEnd) { //Loop until all countries are received ("data retrieval loop")
+            slaveData.count++;
+            while(!end){ //Loop until all the data from a specific country is received ("country loop")
+                MPI_Recv(line, MAX_LINE_LEN, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if (strncmp(line, "end", 3) == 0) { // If the line is "end" -> exit from the country loop
+                    end=true;
+                } 
+                else if (strncmp(line, "totalend", 8) == 0) { // If the line is "totalend" -> exit from the data retrieval loop
+                    totalEnd=true;
+                    end = true;
+                } else {
+                    printf("[Slave %d] received line: %s\n", rank, line);
+                    
+                }
             }
 
-            printf("[Slave %d] received line: %s\n", rank, line);
+            
+            end = false;
+
 
             //TODO: estrarre i valori utili dall'input, calcolare il moving average e la percentage ed inserire la entry dentro l'hash table con la key [country]
 
@@ -223,6 +170,3 @@ int main(int argc, char **argv) {
     MPI_Finalize(); // Finalize MPI
     return 0;
 }
-
-
-
