@@ -1,3 +1,7 @@
+/*SPECIFICHE: il master invia uno per uno le righe -> quando vede che è cambiato il paese, manda allo slave
+un messaggio con scritto "end". Quando poi il master finisce di mandare a tutti gli slave, allora manda a tutti
+un messaggio con scritto "totalend"*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,19 +21,19 @@ typedef struct {
 typedef struct {
     int count; //total number of countries
     CountryResults* countries;
-} SlaveData;
+} MasterData;
 
 /*------------------Slaves' data structures--------------*/
 typedef struct {
     int day, month, year;
     int cases,deaths;
-    char* countryterritoryCode; //lo salviamo per avere una key per i selection
-}dati;
+    //char* countryterritoryCode; //lo salviamo per avere una key per i selection?
+}data;
 
 typedef struct {
     char* countryName;
-    dati inputData[365]; //saves all the data in the file
-    int i;  //used during the computations: keeps count of where in inputData we are at
+    data inputData[365]; //saves all the data in the file
+    int index;  //used during data receival and computations: keeps count of where in inputData we are at
 } Country;
 
 // Hash table
@@ -41,7 +45,56 @@ typedef struct {
 } SlaveData;
 
 /*---------------------------FUNCTIONS--------------------*/
+// get csv columns[num]
+const char* getfield(char* line, int num,int rank) {
 
+    char* aux;
+    const char* tok;
+
+    aux = malloc(sizeof(char)*MAX_LINE_LEN);
+    strcpy(aux,line);
+
+    printf("[NODE %d] Filed took = %s\n",rank,aux);
+
+    for (tok = strtok(aux, ",");
+         tok && *tok;
+         tok = strtok(NULL, ",\n"))
+    {
+        if (!--num)
+            return tok;
+    }
+    return NULL;
+}
+
+//save the received data inside the slave's struct
+void setData(char* line, SlaveData* slaveData,int rank){
+    //Country* c = slaveData->countries;
+    int c = slaveData->count;
+    int ind = slaveData->countries[slaveData->count].index;
+
+    printf("\n\nhere, %s\n\n",line);
+    strcpy(slaveData->countries[c].countryName, getfield(line,7,rank));
+    printf("\n\nhere2, %s\n\n",line);
+
+    slaveData->countries[c].inputData[ind].day = atoi(getfield(line,2,rank));
+    printf("\n\nhere3\n\n");
+    slaveData->countries[c].inputData[ind].month = atoi(getfield(line,3,rank));
+    slaveData->countries[c].inputData[ind].year = atoi(getfield(line,4,rank));
+    slaveData->countries[c].inputData[ind].cases = atoi(getfield(line,5,rank));
+    slaveData->countries[c].inputData[ind].deaths = atoi(getfield(line,6,rank));
+
+    return;
+}
+
+// creation of hash key
+unsigned long create_key(char *str) {
+    unsigned long hash = 5381;
+    int c;
+    while ((c = *str++) != '\0') {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
 /*---------------------------MAIN--------------------*/
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv); // Initialize MPI
@@ -75,7 +128,7 @@ int main(int argc, char **argv) {
 
             char* buffer = strdup(line);
 
-            strcpy(str, getfield(line,9)); // Extract the field "Country" from the line
+            strcpy(str, getfield(line,9,rank)); // Extract the field "Country" from the line
 
             printf("Key Word taken = %s\n",str);
 
@@ -120,12 +173,13 @@ int main(int argc, char **argv) {
         slaveData.countries = malloc(sizeof(Country)*countriesPerSlave);
         for(int i=0;i<countriesPerSlave;i++){
             slaveData.countries[i].countryName = malloc(sizeof(char)*50);
+            slaveData.countries[i].index = 0;
         }
 
         while (!totalEnd) { //Loop until all countries are received ("data retrieval loop")
-            slaveData.count++;
             while(!end){ //Loop until all the data from a specific country is received ("country loop")
                 MPI_Recv(line, MAX_LINE_LEN, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                
                 if (strncmp(line, "end", 3) == 0) { // If the line is "end" -> exit from the country loop
                     end=true;
                 } 
@@ -135,10 +189,14 @@ int main(int argc, char **argv) {
                 } else {
                     printf("[Slave %d] received line: %s\n", rank, line);
                     
+                    //set the data into the structs
+                    setData(line,&slaveData,rank);
+                    printf("DATACHECK -> day: %d\n\n",slaveData.countries[slaveData.count].inputData[slaveData.countries[slaveData.count].index].day);
+                    slaveData.countries[slaveData.count].index++;
                 }
             }
 
-            
+            slaveData.count++;
             end = false;
 
 
