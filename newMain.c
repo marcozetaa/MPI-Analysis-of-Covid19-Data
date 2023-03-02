@@ -1,6 +1,7 @@
 /*SPECIFICHE: il master invia uno per uno le righe -> quando vede che è cambiato il paese, manda allo slave
 un messaggio con scritto "end". Quando poi il master finisce di mandare a tutti gli slave, allora manda a tutti
-un messaggio con scritto "totalend"*/
+un messaggio con scritto "totalend"
+(TODO LATO MASTER)*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@ un messaggio con scritto "totalend"*/
 
 #define MAX_LINE_LEN 1024
 #define NUM_COUNTRIES 214
+#define MAX_COUNTRYNAME_LENGTH 50
 
 /*------------------Master's data structures--------------*/
 typedef struct {
@@ -26,7 +28,7 @@ typedef struct {
 /*------------------Slaves' data structures--------------*/
 typedef struct {
     int day, month, year;
-    int cases,deaths;
+    int cases;
     //char* countryterritoryCode; //lo salviamo per avere una key per i selection?
 }data;
 
@@ -34,14 +36,18 @@ typedef struct {
     char* countryName;
     data inputData[365]; //saves all the data in the file
     int index;  //used during data receival and computations: keeps count of where in inputData we are at
+
+    float movingAverage; //7-days moving average
+    float percentageIncreaseMA;
+    int window[7];       //values on which the moving average is computed
+    int windowIndex; //next index to use in the sliding window
 } Country;
 
 // Hash table
 typedef struct {
     int count; //number of countries in the slave
     Country* countries;
-    //char* top10[10]; //TODO
-
+    char* top10[10];
 } SlaveData;
 
 /*---------------------------FUNCTIONS--------------------*/
@@ -68,7 +74,6 @@ const char* getfield(char* line, int num,int rank) {
 
 //save the received data inside the slave's struct
 void setData(char* line, SlaveData* slaveData,int rank){
-    //Country* c = slaveData->countries;
     int c = slaveData->count;
     int ind = slaveData->countries[slaveData->count].index;
 
@@ -78,7 +83,6 @@ void setData(char* line, SlaveData* slaveData,int rank){
     slaveData->countries[c].inputData[ind].month = atoi(getfield(line,3,rank));
     slaveData->countries[c].inputData[ind].year = atoi(getfield(line,4,rank));
     slaveData->countries[c].inputData[ind].cases = atoi(getfield(line,5,rank));
-    slaveData->countries[c].inputData[ind].deaths = atoi(getfield(line,6,rank));
 
     return;
 }
@@ -101,9 +105,13 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size); // Total number of processes
 
     int num_slaves = size - 1;
-    int countriesPerSlave = (NUM_COUNTRIES/num_slaves) + 1; //+1 just to round up
+    int countriesPerSlave = (NUM_COUNTRIES/num_slaves) + 1; //+1 needed to avoid round-down problems
 
     SlaveData slaveData;
+
+    int day, month, year;
+    //TODO: these will be updated by the master in order to have the days proceed "synchronously" between all the slaves.
+        //This is required since we have to compute a top10 for each day (done by the master)
 
     
     if (rank == 0) { //master
@@ -151,26 +159,25 @@ int main(int argc, char **argv) {
         }
 
         fclose(fp); // Close the input file
-
-        // TODO: gestire il ritorno dei valori che poi andranno stampati e usati per il calcolo della top 10
-
-
     } else { //slaves
         bool end = false; //flag to identify when the slave has received all the data from 1 country
         bool totalEnd = false; //flag to identify when the data transfer from the master is over (no more countries to be received)
         char line[MAX_LINE_LEN]; // Buffer to receive the line
         int countryIndex; //to know where we are in the index
 
-        /*float buffer[DAYS] = {0}; // circular buffer
-        int index = 0; // index of the oldest element in the buffer
-        int count = 0; // number of elements in the buffer
-        float value;*/
-
+        //variables initialization
         slaveData.count = 0;
         slaveData.countries = malloc(sizeof(Country)*countriesPerSlave);
+        for(int i=0;i<10;i++){
+            slaveData.top10[i] = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
+        }
         for(int i=0;i<countriesPerSlave;i++){
-            slaveData.countries[i].countryName = malloc(sizeof(char)*50);
+            slaveData.countries[i].countryName = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
             slaveData.countries[i].index = 0;
+            for(int j=0;j<7;j++){
+                slaveData.countries[i].window[j] = -1;
+            }
+            slaveData.countries[i].windowIndex = 0;
         }
 
         while (!totalEnd) { //Loop until all countries are received ("data retrieval loop")
@@ -194,33 +201,68 @@ int main(int argc, char **argv) {
 
             slaveData.count++;
             end = false;
+        }
 
-
-            //TODO: estrarre i valori utili dall'input, calcolare il moving average e la percentage ed inserire la entry dentro l'hash table con la key [country]
-
-            // Idea di un calcolo di moving average, usa un buffer circolare di size DAYS che ogni volta calcola
-            // la media e la aggiorna ad ogni nuovo valore
-            
-            
-            /*buffer[index] = value;
-            index = (index + 1) % DAYS; // wrap around to the beginning if we reach the end
-            count = count < DAYS ? count + 1 : DAYS; // keep track of the number of elements
-
-            // calculate the moving average
-            float sum = 0;
-            for (int i = 0; i < count; i++) {
-                sum += buffer[(index + i) % DAYS];
-            }
-            float average = sum / count;
-            printf("Moving average: %.2f\n", average);*/
-
-
-            //TODO: Calcolo dei top 10 ranking (oppure mandare un messaggio "END" e successivamente calcolarla?
-
-
+        //reset the index
+        for(int i=0;i<slaveData.count;i++){
+            slaveData.countries[i].index = 0;
         }
     }
 
+    /*HERE FINISHES THE DATA DISTRIBUTION PART; FROM HERE THERE ARE THE ACTUAL COMPUTATIONS*/
+
+    if(rank==0){ //master
+        // TODO: gestire il ritorno dei valori che poi andranno stampati e usati per il calcolo della top 10
+    } else { //slaves
+        //Moving average computation and percentage increase computation
+        for(int i=0;i<slaveData.count;i++){ //for each country
+            float newMovingAverage = 0.0;
+            int consideredDays = 0;
+            Country* country = &slaveData.countries[i];
+            country->window[country->windowIndex] = country->inputData[country->index].cases;   //overwrites one cell of the circular buffer
+            
+            //update the indexes
+            country->index++;
+            country->windowIndex = (country->windowIndex+1)%7;  //keeps the window buffer circular
+
+            for(int j=0;j<7;j++){
+                if(country->window[j]!=-1) {    //-1 is the initialization value. Needed to correctly compute the 1st 6 days
+                    newMovingAverage += (float) country->window[j];
+                    consideredDays++;
+                }
+            }
+            newMovingAverage/= (float) consideredDays;
+
+            country->percentageIncreaseMA = newMovingAverage/country->movingAverage;
+            country->movingAverage = newMovingAverage;
+
+
+            //convert values into a single string, separated by ","
+            char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
+            strcpy(stringToSend,"");
+            char* tmp = malloc(sizeof(char)*10);
+
+            strcat(stringToSend,country->countryName);
+            strcat(stringToSend,",");
+
+            gcvt(country->movingAverage,8,tmp);
+            strcat(stringToSend,tmp);
+            strcat(stringToSend,",");
+            
+            gcvt(country->percentageIncreaseMA,8,tmp);
+            strcat(stringToSend,tmp);
+            strcat(stringToSend,",");
+
+
+            MPI_Send(stringToSend,strlen(stringToSend),MPI_CHAR,0,0,MPI_COMM_WORLD);
+        }
+
+        //TODO
+        //Top ten computation
+        int top10indexes[10]; //indexes in slaveData.countries[] of the top10 countries
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize(); // Finalize MPI
     return 0;
 }
