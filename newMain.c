@@ -72,12 +72,9 @@ void setData(char* line, SlaveData* slaveData,int rank){
     int c = slaveData->count;
     int ind = slaveData->countries[slaveData->count].index;
 
-    printf("\n\nhere, %s\n\n",line);
     strcpy(slaveData->countries[c].countryName, getfield(line,7,rank));
-    printf("\n\nhere2, %s\n\n",line);
 
     slaveData->countries[c].inputData[ind].day = atoi(getfield(line,2,rank));
-    printf("\n\nhere3\n\n");
     slaveData->countries[c].inputData[ind].month = atoi(getfield(line,3,rank));
     slaveData->countries[c].inputData[ind].year = atoi(getfield(line,4,rank));
     slaveData->countries[c].inputData[ind].cases = atoi(getfield(line,5,rank));
@@ -191,7 +188,6 @@ int main(int argc, char **argv) {
                     
                     //set the data into the structs
                     setData(line,&slaveData,rank);
-                    printf("DATACHECK -> day: %d\n\n",slaveData.countries[slaveData.count].inputData[slaveData.countries[slaveData.count].index].day);
                     slaveData.countries[slaveData.count].index++;
                 }
             }
