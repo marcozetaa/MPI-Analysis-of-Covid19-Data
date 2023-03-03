@@ -265,12 +265,13 @@ int main(int argc, char **argv) {
 
     /*HERE FINISHES THE DATA DISTRIBUTION PART; FROM HERE THERE ARE THE ACTUAL COMPUTATIONS*/
 
-    int day = 30;
-    int month=12;
-    int year = 2019;
+    day = 30;
+    month=12;
+    year = 2019;
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
-        nextDay(&day,&month,&year);
+
+        nextDate(&day,&month,&year);
 
         //moving average and percentage increase
         if(rank==0){ //master
