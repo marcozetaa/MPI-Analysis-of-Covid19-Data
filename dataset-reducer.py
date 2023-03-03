@@ -36,11 +36,3 @@ with open('files/input.csv', newline='') as csvfile:
     f.write(output)
     f.close
     print("Done.")
-
-    # for row in data:
-    #     if(curDay < DAYS_PER_COUNTRY):
-    #         output += ','.join(row)
-    #         output += "\n"
-    #         curDay = curDay + 1
-    #     elif(curCountry < NUMBER_OF_COUNTRIES):
-    #         curCountry += 1
