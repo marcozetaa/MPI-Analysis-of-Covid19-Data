@@ -24,7 +24,6 @@ typedef struct {
     int count; //total number of countries
     CountryResults* countries;
 } MasterData;
-} MasterData;
 
 /*------------------Slaves' data structures--------------*/
 typedef struct {
