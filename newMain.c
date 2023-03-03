@@ -4,7 +4,7 @@
 #include <mpi.h>
 #include <stdbool.h>
 
-#define MAX_LINE_LEN 1024
+#define MAX_LINE_LEN 2048
 #define NUM_COUNTRIES 214
 
 /*------------------Master's data structures--------------*/
@@ -13,11 +13,11 @@ typedef struct {
     //TODO: here we'll save the aggregated data for the country
 } CountryResults;
 
-// Hash table
+// Entry for master
 typedef struct {
     int count; //total number of countries
     CountryResults* countries;
-} SlaveData;
+} MasterData;
 
 /*------------------Slaves' data structures--------------*/
 typedef struct {
@@ -32,7 +32,7 @@ typedef struct {
     int i;  //used during the computations: keeps count of where in inputData we are at
 } Country;
 
-// Hash table
+// Entry for slave
 typedef struct {
     int count; //number of countries in the slave
     Country* countries;
@@ -41,6 +41,22 @@ typedef struct {
 } SlaveData;
 
 /*---------------------------FUNCTIONS--------------------*/
+
+// get csv columns[num]
+const char* getfield(char* line, int num) {
+
+    char* aux = line;
+    const char* tok;
+
+    for (tok = strtok(aux, ",");
+         tok && *tok;
+         tok = strtok(NULL, ",\n"))
+    {
+        if (!--num)
+            return tok;
+    }
+    return NULL;
+}
 
 /*---------------------------MAIN--------------------*/
 int main(int argc, char **argv) {
@@ -66,8 +82,9 @@ int main(int argc, char **argv) {
 
         char line[MAX_LINE_LEN];
         char str[MAX_LINE_LEN];
-        int last_sent[num_slaves]; // Index of the last slave process each string was sent to
-        memset(last_sent, -1, sizeof(last_sent));
+
+        char* lastCountry = malloc(3); // allocate memory for lastCountry
+        int dest = 0;
 
         fgets(line, MAX_LINE_LEN, fp); //Skip first line
 
@@ -77,23 +94,17 @@ int main(int argc, char **argv) {
 
             strcpy(str, getfield(line,9)); // Extract the field "Country" from the line
 
-            printf("Key Word taken = %s\n",str);
+            if(strcmp(lastCountry, str) != 0){ // if the country has changed
 
-            int dest; // Destination process for the current line
-            if (last_sent[create_key(str) % num_slaves] == -1) { // If the string has not been sent before
-                dest = (create_key(str) % num_slaves) + 1; // Send it to the corresponding slave process
-            } else { // If the string has been sent before
-                dest = last_sent[create_key(str) % num_slaves] + 1; // Send it to the same slave process as before
-                if (dest > num_slaves) {
-                    dest = 1;
-                }
+                strcpy(lastCountry, str); // copy the value of str to lastCountry
+
+                dest = (dest + 1) % size == 0 ? 1 : (dest + 1) % size;
+
             }
 
-            printf("[MASTER] Sending line = %s to process %d\n",buffer,dest);
-
             MPI_Send(buffer, MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD);
-            last_sent[create_key(str) % num_slaves] = dest - 1; // Update the index of the last slave process each string was sent to
 
+            free(buffer);
         }
 
         for( int i=1; i<=size; i++){
@@ -134,7 +145,6 @@ int main(int argc, char **argv) {
                     end = true;
                 } else {
                     printf("[Slave %d] received line: %s\n", rank, line);
-                    
                 }
             }
 
