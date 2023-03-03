@@ -96,6 +96,8 @@ int main(int argc, char **argv) {
 
             if(strcmp(lastCountry, str) != 0){ // if the country has changed
 
+                MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // Send the end line to the destination process
+
                 strcpy(lastCountry, str); // copy the value of str to lastCountry
 
                 dest = (dest + 1) % size == 0 ? 1 : (dest + 1) % size;
@@ -108,7 +110,7 @@ int main(int argc, char **argv) {
         }
 
         for( int i=1; i<=size; i++){
-            MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
+            MPI_Send("totalend", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
         }
 
         fclose(fp); // Close the input file
