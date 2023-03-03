@@ -1,7 +1,6 @@
 /*SPECIFICHE: il master invia uno per uno le righe -> quando vede che è cambiato il paese, manda allo slave
 un messaggio con scritto "end". Quando poi il master finisce di mandare a tutti gli slave, allora manda a tutti
-un messaggio con scritto "totalend"
-(TODO LATO MASTER)*/
+un messaggio con scritto "totalend"*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -158,10 +157,7 @@ int main(int argc, char **argv) {
     MasterData masterData;
 
     int day, month, year;
-    //TODO: these will be updated by the master in order to have the days proceed "synchronously" between all the slaves.
-        //This is required since we have to compute a top10 for each day (done by the master)
 
-    
     if (rank == 0) { //master
         masterData.count = 0;
         masterData.countries = malloc(sizeof(CountryResults)*NUM_COUNTRIES);
@@ -277,7 +273,6 @@ int main(int argc, char **argv) {
         if(rank==0){ //master
             char *line = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
             char *name = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
-            // TODO: gestire il ritorno dei valori che poi andranno stampati e usati per il calcolo della top 10
             for(int i=0;i<masterData.count;i++){
                 MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*2,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                 
@@ -340,7 +335,6 @@ int main(int argc, char **argv) {
         //Top ten computation
         //int top10indexes[10]; //indexes in slaveData.countries[] of the top10 countries
          if(rank==0){ //master
-            // TODO: gestire il ritorno dei valori che poi andranno stampati e usati per il calcolo della top 10
         } else { //slaves
 
         }
