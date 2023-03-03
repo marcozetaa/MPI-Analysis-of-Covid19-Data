@@ -9,7 +9,7 @@ un messaggio con scritto "totalend"
 #include <mpi.h>
 #include <stdbool.h>
 
-#define MAX_LINE_LEN 1024
+#define MAX_LINE_LEN 2048
 #define NUM_COUNTRIES 214
 #define MAX_COUNTRYNAME_LENGTH 50
 
@@ -19,10 +19,11 @@ typedef struct {
     //TODO: here we'll save the aggregated data for the country
 } CountryResults;
 
-// Hash table
+// Entry for master
 typedef struct {
     int count; //total number of countries
     CountryResults* countries;
+} MasterData;
 } MasterData;
 
 /*------------------Slaves' data structures--------------*/
@@ -43,7 +44,7 @@ typedef struct {
     int windowIndex; //next index to use in the sliding window
 } Country;
 
-// Hash table
+// Entry for slave
 typedef struct {
     int count; //number of countries in the slave
     Country* countries;
@@ -124,8 +125,9 @@ int main(int argc, char **argv) {
 
         char line[MAX_LINE_LEN];
         char str[MAX_LINE_LEN];
-        int last_sent[num_slaves]; // Index of the last slave process each string was sent to
-        memset(last_sent, -1, sizeof(last_sent));
+
+        char* lastCountry = malloc(3); // allocate memory for lastCountry
+        int dest = 0;
 
         fgets(line, MAX_LINE_LEN, fp); //Skip first line
 
@@ -135,27 +137,23 @@ int main(int argc, char **argv) {
 
             strcpy(str, getfield(line,9,rank)); // Extract the field "Country" from the line
 
-            printf("Key Word taken = %s\n",str);
+            if(strcmp(lastCountry, str) != 0){ // if the country has changed
 
-            int dest; // Destination process for the current line
-            if (last_sent[create_key(str) % num_slaves] == -1) { // If the string has not been sent before
-                dest = (create_key(str) % num_slaves) + 1; // Send it to the corresponding slave process
-            } else { // If the string has been sent before
-                dest = last_sent[create_key(str) % num_slaves] + 1; // Send it to the same slave process as before
-                if (dest > num_slaves) {
-                    dest = 1;
-                }
+                MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // Send the end line to the destination process
+
+                strcpy(lastCountry, str); // copy the value of str to lastCountry
+
+                dest = (dest + 1) % size == 0 ? 1 : (dest + 1) % size;
+
             }
 
-            printf("[MASTER] Sending line = %s to process %d\n",buffer,dest);
-
             MPI_Send(buffer, MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD);
-            last_sent[create_key(str) % num_slaves] = dest - 1; // Update the index of the last slave process each string was sent to
 
+            free(buffer);
         }
 
         for( int i=1; i<=size; i++){
-            MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
+            MPI_Send("totalend", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
         }
 
         fclose(fp); // Close the input file
