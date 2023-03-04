@@ -267,12 +267,16 @@ int main(int argc, char **argv) {
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
 
-        nextDate(&day,&month,&year);
-
         //moving average and percentage increase
         if(rank==0){ //master
+            nextDate(&day,&month,&year);
             char *line = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
             char *name = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
+            char *dateString = malloc(sizeof(char)*11);
+            sprintf(dateString, "%d,%d,%d", day,month,year);
+            for(int i=0;i<num_slaves;i++){
+                MPI_Send(dateString,10,MPI_CHAR,i,3,MPI_COMM_WORLD);
+            }
             for(int i=0;i<masterData.count;i++){
                 MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*2,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                 
@@ -287,6 +291,7 @@ int main(int argc, char **argv) {
             free(line);
         } else { //slaves -> TODO: aggiungere il controllo dei giorni
             //Moving average computation and percentage increase computation
+            // TODO Receive date from master
             for(int i=0;i<slaveData.count;i++){ //for each country
                 float newMovingAverage = 0.0;
                 int consideredDays = 0;
