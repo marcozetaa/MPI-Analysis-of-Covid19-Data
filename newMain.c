@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
             char *dateString = malloc(sizeof(char)*11);
             sprintf(dateString, "%d,%d,%d", day,month,year);
             for(int i=0;i<num_slaves;i++){
-                MPI_Send(dateString,10,MPI_CHAR,i,3,MPI_COMM_WORLD);
+                MPI_Send(dateString,10,MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
             }
             for(int i=0;i<masterData.count;i++){
                 MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*2,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
             //Moving average computation and percentage increase computation
             // TODO Receive date from master
             char *dateString = malloc(sizeof(char)*11);
-            MPI_Recv(dateString,10,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            MPI_Recv(dateString,10,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
             day = atoi(getfield(dateString,0,rank));
             month = atoi(getfield(dateString,1,rank));
             year = atoi(getfield(dateString,2,rank));
@@ -301,6 +301,7 @@ int main(int argc, char **argv) {
                 float newMovingAverage = 0.0;
                 int consideredDays = 0;
                 Country* country = &slaveData.countries[i];
+                // New moving average is computed only if the current date is present in the dataset of this country
                 if(country->inputData[country->index].day == day && country->inputData[country->index].month == month && country->inputData[country->index].year == year) {
                     country->window[country->windowIndex] = country->inputData[country->index].cases;   //overwrites one cell of the circular buffer
                 
@@ -321,6 +322,7 @@ int main(int argc, char **argv) {
                 }
 
                 //convert values into a single string, separated by ","
+                // TODO: Check if it is correct that the average is sent also when it was not updated because the day was not in the dataset
                 char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
                 strcpy(stringToSend,"");
                 char* tmp = malloc(sizeof(char)*10);
