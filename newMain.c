@@ -292,27 +292,33 @@ int main(int argc, char **argv) {
         } else { //slaves -> TODO: aggiungere il controllo dei giorni
             //Moving average computation and percentage increase computation
             // TODO Receive date from master
+            char *dateString = malloc(sizeof(char)*11);
+            MPI_Recv(dateString,10,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            day = atoi(getfield(dateString,0,rank));
+            month = atoi(getfield(dateString,1,rank));
+            year = atoi(getfield(dateString,2,rank));
             for(int i=0;i<slaveData.count;i++){ //for each country
                 float newMovingAverage = 0.0;
                 int consideredDays = 0;
                 Country* country = &slaveData.countries[i];
-                country->window[country->windowIndex] = country->inputData[country->index].cases;   //overwrites one cell of the circular buffer
+                if(country->inputData[country->index].day == day && country->inputData[country->index].month == month && country->inputData[country->index].year == year) {
+                    country->window[country->windowIndex] = country->inputData[country->index].cases;   //overwrites one cell of the circular buffer
                 
-                //update the indexes
-                country->index++;
-                country->windowIndex = (country->windowIndex+1)%7;  //keeps the window buffer circular
+                    //update the indexes
+                    country->index++;
+                    country->windowIndex = (country->windowIndex+1)%7;  //keeps the window buffer circular
 
-                for(int j=0;j<7;j++){
-                    if(country->window[j]!=-1) {    //-1 is the initialization value. Needed to correctly compute the 1st 6 days
-                        newMovingAverage += (float) country->window[j];
-                        consideredDays++;
+                    for(int j=0;j<7;j++){
+                        if(country->window[j]!=-1) {    //-1 is the initialization value. Needed to correctly compute the 1st 6 days
+                            newMovingAverage += (float) country->window[j];
+                            consideredDays++;
+                        }
                     }
+                    newMovingAverage/= (float) consideredDays;
+
+                    country->percentageIncreaseMA = newMovingAverage/country->movingAverage;
+                    country->movingAverage = newMovingAverage;
                 }
-                newMovingAverage/= (float) consideredDays;
-
-                country->percentageIncreaseMA = newMovingAverage/country->movingAverage;
-                country->movingAverage = newMovingAverage;
-
 
                 //convert values into a single string, separated by ","
                 char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
