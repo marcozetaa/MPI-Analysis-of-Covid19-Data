@@ -7,6 +7,7 @@ un messaggio con scritto "totalend"*/
 #include <string.h>
 #include <mpi.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define MAX_LINE_LEN 2048
 #define NUM_COUNTRIES 214
@@ -60,7 +61,7 @@ const char* getfield(char* line, int num,int rank) {
     aux = malloc(sizeof(char)*MAX_LINE_LEN);
     strcpy(aux,line);
 
-    printf("[NODE %d] Filed took = %s\n",rank,aux);
+    //printf("[NODE %d] Filed took = %s\n",rank,aux);
 
     for (tok = strtok(aux, ","); tok && *tok; tok = strtok(NULL, ",\n")){
         if (!--num){
@@ -168,7 +169,7 @@ int main(int argc, char **argv) {
         }
 
 
-        FILE *fp = fopen("files/input.csv", "r");
+        FILE *fp = fopen("files/reduced-dataset.csv", "r");
         if (fp == NULL) {
             printf("[MASTER] Error: cannot open file.\n");
             exit(1);
@@ -204,7 +205,7 @@ int main(int argc, char **argv) {
             free(buffer);
         }
 
-        for( int i=1; i<=size; i++){
+        for( int i=1; i<size; i++){
             MPI_Send("totalend", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
         }
 
@@ -241,7 +242,7 @@ int main(int argc, char **argv) {
                     totalEnd=true;
                     end = true;
                 } else {
-                    printf("[Slave %d] received line: %s\n", rank, line);
+                    //printf("[Slave %d] received line: %s\n", rank, line);
                     
                     //set the data into the structs
                     setData(line,&slaveData,rank);
@@ -266,6 +267,12 @@ int main(int argc, char **argv) {
     year = 2019;
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
+        printf("\n\n\n\n\n\n\n\n");
+        char ciao;
+        if(rank == 0) {
+            scanf("%c", &ciao);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
 
         //moving average and percentage increase
         if(rank==0){ //master
@@ -279,6 +286,7 @@ int main(int argc, char **argv) {
             }
             for(int i=0;i<masterData.count;i++){
                 MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*2,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                printf("[MASTER]: %s\n", line);
                 
                 strcpy(name,getfield(line,1,rank)); //get the country name
 
@@ -293,9 +301,9 @@ int main(int argc, char **argv) {
             //Moving average computation and percentage increase computation
             char *dateString = malloc(sizeof(char)*11);
             MPI_Recv(dateString,10,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
-            day = atoi(getfield(dateString,0,rank));
-            month = atoi(getfield(dateString,1,rank));
-            year = atoi(getfield(dateString,2,rank));
+            day = atoi(getfield(dateString,1,rank));
+            month = atoi(getfield(dateString,2,rank));
+            year = atoi(getfield(dateString,3,rank));
             for(int i=0;i<slaveData.count;i++){ //for each country
                 float newMovingAverage = 0.0;
                 int consideredDays = 0;
@@ -334,7 +342,7 @@ int main(int argc, char **argv) {
                 
                 gcvt(country->percentageIncreaseMA,8,tmp);
                 strcat(stringToSend,tmp);
-                strcat(stringToSend,",");
+                strcat(stringToSend,"\0");
 
 
                 MPI_Send(stringToSend,strlen(stringToSend),MPI_CHAR,0,1,MPI_COMM_WORLD);
