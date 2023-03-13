@@ -289,9 +289,8 @@ int main(int argc, char **argv) {
 
             free(name);
             free(line);
-        } else { //slaves -> TODO: aggiungere il controllo dei giorni
+        } else { //slaves
             //Moving average computation and percentage increase computation
-            // TODO Receive date from master
             char *dateString = malloc(sizeof(char)*11);
             MPI_Recv(dateString,10,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
             day = atoi(getfield(dateString,0,rank));
@@ -322,7 +321,6 @@ int main(int argc, char **argv) {
                 }
 
                 //convert values into a single string, separated by ","
-                // TODO: Check if it is correct that the average is sent also when it was not updated because the day was not in the dataset
                 char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
                 strcpy(stringToSend,"");
                 char* tmp = malloc(sizeof(char)*10);
@@ -344,7 +342,7 @@ int main(int argc, char **argv) {
         }
 
         //TODO
-        //MUST DO: use tag 2 in the communications
+        //MUST DO: use another tag in the communications
         //Top ten computation
         //int top10indexes[10]; //indexes in slaveData.countries[] of the top10 countries
          if(rank==0){ //master
