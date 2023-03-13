@@ -1,6 +1,7 @@
 /*SPECIFICHE: il master invia uno per uno le righe -> quando vede che è cambiato il paese, manda allo slave
 un messaggio con scritto "end". Quando poi il master finisce di mandare a tutti gli slave, allora manda a tutti
 un messaggio con scritto "totalend"*/
+/*TODO: non resettare l'index a riga 259 e leggere invece i dati dal fondo di inputData[]*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,6 +160,8 @@ int main(int argc, char **argv) {
 
     int day, month, year;
 
+    /*----------DATA DISTRIBUTION PRIOR TO THE ACTUAL PROGRAM-----------------*/
+
     if (rank == 0) { //master
         masterData.count = 0;
         masterData.countries = malloc(sizeof(CountryResults)*NUM_COUNTRIES);
@@ -169,14 +172,14 @@ int main(int argc, char **argv) {
         }
 
 
-        FILE *fp = fopen("files/reduced-dataset.csv", "r");
+        FILE *fp = fopen("files/super-reduced-dataset.csv", "r");
         if (fp == NULL) {
             printf("[MASTER] Error: cannot open file.\n");
             exit(1);
         }
 
         char line[MAX_LINE_LEN];
-        char str[MAX_LINE_LEN];
+        char str[MAX_COUNTRYNAME_LENGTH];
 
         char* lastCountry = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH); // allocate memory for lastCountry
         int dest = 0;
@@ -205,7 +208,7 @@ int main(int argc, char **argv) {
             free(buffer);
         }
 
-        for( int i=1; i<size; i++){
+        for( int i=1; i<=num_slaves; i++){
             MPI_Send("totalend", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
         }
 
@@ -214,7 +217,6 @@ int main(int argc, char **argv) {
         bool end = false; //flag to identify when the slave has received all the data from 1 country
         bool totalEnd = false; //flag to identify when the data transfer from the master is over (no more countries to be received)
         char line[MAX_LINE_LEN]; // Buffer to receive the line
-        int countryIndex; //to know where we are in the index
 
         //variables initialization
         slaveData.count = 0;
@@ -254,9 +256,9 @@ int main(int argc, char **argv) {
             end = false;
         }
 
-        //reset the index
+        //get the index ready for reading the data
         for(int i=0;i<slaveData.count;i++){
-            slaveData.countries[i].index = 0;
+            slaveData.countries[i].index -= 1;
         }
     }
 
@@ -313,7 +315,7 @@ int main(int argc, char **argv) {
                     country->window[country->windowIndex] = country->inputData[country->index].cases;   //overwrites one cell of the circular buffer
                 
                     //update the indexes
-                    country->index++;
+                    country->index--;
                     country->windowIndex = (country->windowIndex+1)%7;  //keeps the window buffer circular
 
                     for(int j=0;j<7;j++){
@@ -346,6 +348,7 @@ int main(int argc, char **argv) {
 
 
                 MPI_Send(stringToSend,strlen(stringToSend),MPI_CHAR,0,1,MPI_COMM_WORLD);
+                free(stringToSend);
             }
         }
 
@@ -353,10 +356,10 @@ int main(int argc, char **argv) {
         //MUST DO: use another tag in the communications
         //Top ten computation
         //int top10indexes[10]; //indexes in slaveData.countries[] of the top10 countries
-         if(rank==0){ //master
+        /*if(rank==0){ //master
         } else { //slaves
 
-        }
+        }*/
 
     }
 
