@@ -1,15 +1,16 @@
 import csv
 import sys
 
-NUMBER_OF_COUNTRIES = 2
-DAYS_PER_COUNTRY = 7
+NUMBER_OF_COUNTRIES = 10
+DAYS_PER_COUNTRY = 20
 
 with open('files/input.csv', newline='') as csvfile:
     data = csv.reader(csvfile, delimiter=',', quotechar='|')
 
-    output = ""
+    #output = ""
     prevCountry = ""
-    next(data) # Skip the first line (header)
+    header = next(data) # Save the first line (header)
+    output = ','.join(header) + '\n'
     
     row = next(data)
     for i in range(NUMBER_OF_COUNTRIES):
@@ -32,7 +33,7 @@ with open('files/input.csv', newline='') as csvfile:
                 print("End of file reached")
                 sys.exit()
     
-    f = open('files/super-reduced-dataset.csv', 'w')
+    f = open('files/reduced-dataset.csv', 'w')
     f.write(output)
     f.close
     print("Done.")

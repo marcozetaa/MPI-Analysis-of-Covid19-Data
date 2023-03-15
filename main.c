@@ -208,6 +208,7 @@ int main(int argc, char **argv) {
             free(buffer);
         }
 
+        MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // After end of file we need to send an "end" message to the last slave because this was not sent in the loop (no country change happened) 
         for( int i=1; i<=num_slaves; i++){
             MPI_Send("totalend", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
         }
@@ -240,9 +241,9 @@ int main(int argc, char **argv) {
                 
                 if (strncmp(line, "end", 3) == 0) { // If the line is "end" -> exit from the country loop
                     end=true;
-                    //slaveData.count--; //TODO: Check
                 } 
                 else if (strncmp(line, "totalend", 8) == 0) { // If the line is "totalend" -> exit from the data retrieval loop
+                    slaveData.count--; // An extra iteration takes place between last "end" message and "totalend" message
                     totalEnd=true;
                     end = true;
                 } else {
