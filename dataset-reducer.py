@@ -1,8 +1,8 @@
 import csv
 import sys
 
-NUMBER_OF_COUNTRIES = 6
-DAYS_PER_COUNTRY = 10
+NUMBER_OF_COUNTRIES = 2
+DAYS_PER_COUNTRY = 7
 
 with open('files/input.csv', newline='') as csvfile:
     data = csv.reader(csvfile, delimiter=',', quotechar='|')
