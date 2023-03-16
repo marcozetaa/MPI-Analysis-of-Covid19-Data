@@ -287,8 +287,8 @@ int main(int argc, char **argv) {
             char *name = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
             char *dateString = malloc(sizeof(char)*11);
             sprintf(dateString, "%d,%d,%d", day,month,year);
-            for(int i=0;i<num_slaves;i++){
-                MPI_Send(dateString,10,MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
+            for(int i=1;i<=num_slaves;i++){
+                MPI_Send(dateString,11,MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
                 printf("[MASTER]: Sending date %s to slave %d.\n", dateString, i);
             }
             for(int i=0;i<masterData.count;i++){
@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
         } else { //slaves
             //Moving average computation and percentage increase computation
             char *dateString = malloc(sizeof(char)*11);
-            MPI_Recv(dateString,10,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
+            MPI_Recv(dateString,11,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
             day = atoi(getfield(dateString,1,rank));
             month = atoi(getfield(dateString,2,rank));
             year = atoi(getfield(dateString,3,rank));
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
                     country->movingAverage = newMovingAverage;
                 }
                 else {
-                    printf("[Slave %d]: date not present. Day: %d, index: %d\n", rank, country->inputData[country->index].day, country->index);
+                    printf("[Slave %d]: date not present. Day: %d (%d) %d %d, index: %d\n", rank, country->inputData[country->index].day, day, month, year, country->index);
                 }
 
                 //convert values into a single string, separated by ","
