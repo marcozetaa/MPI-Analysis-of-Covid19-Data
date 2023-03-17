@@ -54,7 +54,7 @@ typedef struct {
 /*---------------------------FUNCTIONS--------------------*/
 //get csv columns[num]
 //columns are numbered from 1
-const char* getfield(char* line, int num,int rank) {
+/*const char* getfield(char* line, int num,int rank) {
 
     char* aux;
     const char* tok;
@@ -73,6 +73,42 @@ const char* getfield(char* line, int num,int rank) {
 
     free(aux);
     return NULL;
+}*/
+char* getfield(char* line, int num, int rank) {
+    char* aux;
+    char* tok;
+
+    aux = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
+    strcpy(aux,line);
+
+    //printf("[NODE %d] Filed took = %s\n",rank,aux);
+
+    // Returns first token
+    tok = strtok(aux, ",");
+ 
+    // Keep printing tokens while one of the delimiters present in aux.
+    while (tok != NULL && --num!=0) {
+        //printf(" %s\n", tok);
+        tok = strtok(NULL, ",");
+    }
+
+    return tok;
+}
+
+//prints some important slave data (countryname,day/month/year,cases)
+void printSlaveData(SlaveData slaveData){
+    char* str = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
+    int day, month, year, cases;
+    int c = slaveData.count;
+    int ind = slaveData.countries[slaveData.count].index;
+
+    strcpy(str,slaveData.countries[c].countryName);
+    day = slaveData.countries[c].inputData[ind].day;
+    month = slaveData.countries[c].inputData[ind].month;
+    year = slaveData.countries[c].inputData[ind].year;
+    cases = slaveData.countries[c].inputData[ind].cases;
+
+    printf("Line: %s,%d/%d/%d,%d\n",str,day,month,year,cases);
 }
 
 //save the received data inside the slave's struct
@@ -86,6 +122,8 @@ void setData(char* line, SlaveData* slaveData,int rank){
     slaveData->countries[c].inputData[ind].month = atoi(getfield(line,3,rank));
     slaveData->countries[c].inputData[ind].year = atoi(getfield(line,4,rank));
     slaveData->countries[c].inputData[ind].cases = atoi(getfield(line,5,rank));
+
+    printSlaveData(*slaveData);
 
     return;
 }
@@ -297,6 +335,7 @@ int main(int argc, char **argv) {
                 masterData.countries[index].percentageIncreaseMA = atof(getfield(line,3,rank));
             }
 
+            free(dateString);
             free(name);
             free(line);
         } else { //slaves
@@ -306,6 +345,8 @@ int main(int argc, char **argv) {
             day = atoi(getfield(dateString,1,rank));
             month = atoi(getfield(dateString,2,rank));
             year = atoi(getfield(dateString,3,rank));
+            free(dateString);
+
             for(int i=0;i<slaveData.count;i++){ //for each country
                 float newMovingAverage = 0.0;
                 int consideredDays = 0;
@@ -349,6 +390,7 @@ int main(int argc, char **argv) {
 
                 MPI_Send(stringToSend,strlen(stringToSend),MPI_CHAR,0,1,MPI_COMM_WORLD);
                 free(stringToSend);
+                free(tmp);
             }
         }
 
