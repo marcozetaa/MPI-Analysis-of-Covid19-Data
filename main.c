@@ -13,6 +13,7 @@ un messaggio con scritto "totalend"*/
 #define MAX_LINE_LEN 2048
 #define NUM_COUNTRIES 214
 #define MAX_COUNTRYNAME_LENGTH 50
+#define TOP_N 5
 
 /*------------------Master's data structures--------------*/
 typedef struct {
@@ -26,6 +27,12 @@ typedef struct {
     int count; //total number of countries
     CountryResults* countries;
 } MasterData;
+
+typedef struct {
+    char* countryName;
+    float percentageIncreaseMA;
+    int indexInArray; //used only in the min (of the top_n)
+} Top10;
 
 /*------------------Slaves' data structures--------------*/
 typedef struct {
@@ -182,6 +189,82 @@ int getIndex(char *name, MasterData masterData){
 
     return -1;  //error
 }
+
+void top_nComputation(MasterData masterData, int day, int month, int year){
+    Top10 top[TOP_N];
+    Top10 min;
+
+    //first for loop is to init and initially fill the array
+    min.countryName = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
+    min.percentageIncreaseMA = 9999.9;
+    for(int i=0;i<TOP_N;i++){
+        //initialisation
+        top[i].countryName = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
+        top[i].percentageIncreaseMA = 0;
+
+        //set the received parameters
+        strcpy(top[i].countryName,masterData.countries[i].countryName);
+        top[i].percentageIncreaseMA = masterData.countries[i].percentageIncreaseMA;
+
+        //check for the min of the current top10
+        if(top[i].percentageIncreaseMA < min.percentageIncreaseMA){
+            strcpy(min.countryName,top[i].countryName);
+            min.percentageIncreaseMA = top[i].percentageIncreaseMA;
+            min.indexInArray = i;
+        }
+    }
+
+    //second for loop goes through the rest of the countries
+    for(int i=TOP_N;i<masterData.count;i++){
+        if(masterData.countries[i].percentageIncreaseMA > min.percentageIncreaseMA){
+            //update min
+            strcpy(min.countryName,masterData.countries[i].countryName);
+            min.percentageIncreaseMA = masterData.countries[i].percentageIncreaseMA;
+            //update top array
+            strcpy(top[min.indexInArray].countryName,min.countryName);
+            top[min.indexInArray].percentageIncreaseMA = min.percentageIncreaseMA;
+
+            //update the min index
+            for(int j=0;j<TOP_N;j++){
+                if(top[j].percentageIncreaseMA < min.percentageIncreaseMA){
+                    strcpy(min.countryName,top[j].countryName);
+                    min.percentageIncreaseMA = top[j].percentageIncreaseMA;
+                    min.indexInArray = j;
+                }
+            }
+        }
+    }
+
+    //sorting algorithm - bubble sort
+    //TODO: better sorting algorithm
+    Top10 tmp;
+    tmp.countryName = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
+    for(int i=0;i<TOP_N;i++){
+        for(int j=i;j<TOP_N;j++){
+            if(top[i].percentageIncreaseMA < top[j].percentageIncreaseMA){
+                strcpy(tmp.countryName,top[i].countryName);
+                tmp.percentageIncreaseMA = top[i].percentageIncreaseMA;
+
+                strcpy(top[i].countryName,top[j].countryName);
+                top[i].percentageIncreaseMA = top[j].percentageIncreaseMA;
+
+                strcpy(top[j].countryName,tmp.countryName);
+                top[j].percentageIncreaseMA = tmp.percentageIncreaseMA;
+            }
+        }
+    }
+
+    printf("\nTOP10 %d/%d/%d\n",day,month,year);
+    for(int i=0;i<TOP_N;i++){
+        printf("%d) %s -> %f\n",i+1,top[i].countryName,top[i].percentageIncreaseMA);
+    }
+
+    //clean-up
+    free(tmp.countryName);
+    for(int i=0;i<TOP_N;i++){
+        free(top[i].countryName);
+    }
+}
 /*---------------------------MAIN--------------------*/
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv); // Initialize MPI
@@ -311,11 +394,11 @@ int main(int argc, char **argv) {
     year = 2019;
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
-        char ciao;
-        /* if(rank == 0) {
+        /* char ciao;
+        if(rank == 0) {
             scanf("%c", &ciao);
         } */
-        //MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);    //synchronize day by day
 
         //moving average and percentage increase
         if(rank==0){ //master
@@ -404,14 +487,8 @@ int main(int argc, char **argv) {
             }
         }
 
-        //TODO
-        //MUST DO: use another tag in the communications
-        //Top ten computation
-        //int top10indexes[10]; //indexes in slaveData.countries[] of the top10 countries
-        /*if(rank==0){ //master
-        } else { //slaves
-
-        }*/
+        //top10 done without saving any state
+        if(rank==0) top_nComputation(masterData,day,month,year);
 
     }
     //--printf("[NODE %d]: end of loop.\n", rank);
