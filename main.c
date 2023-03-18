@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
         }
 
 
-        FILE *fp = fopen("files/super-reduced-dataset.csv", "r");
+        FILE *fp = fopen("files/reduced-dataset.csv", "r");
         if (fp == NULL) {
             printf("[MASTER] Error: cannot open file.\n");
             exit(1);
@@ -246,6 +246,7 @@ int main(int argc, char **argv) {
             free(buffer);
         }
 
+        MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // After end of file we need to send an "end" message to the last slave because this was not sent in the loop (no country change happened) 
         for( int i=1; i<=num_slaves; i++){
             MPI_Send("totalend", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
         }
@@ -274,11 +275,13 @@ int main(int argc, char **argv) {
         while (!totalEnd) { //Loop until all countries are received ("data retrieval loop")
             while(!end){ //Loop until all the data from a specific country is received ("country loop")
                 MPI_Recv(line, MAX_LINE_LEN, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                //--printf("[Slave %d] received line: %s\n", rank, line);
                 
                 if (strncmp(line, "end", 3) == 0) { // If the line is "end" -> exit from the country loop
                     end=true;
                 } 
                 else if (strncmp(line, "totalend", 8) == 0) { // If the line is "totalend" -> exit from the data retrieval loop
+                    slaveData.count--; // An extra iteration takes place between last "end" message and "totalend" message
                     totalEnd=true;
                     end = true;
                 } else {
@@ -297,22 +300,22 @@ int main(int argc, char **argv) {
         //get the index ready for reading the data
         for(int i=0;i<slaveData.count;i++){
             slaveData.countries[i].index -= 1;
+            printf("[Slave %d]: index of country %d is %d.\n", rank, i, slaveData.countries[i].index);
         }
     }
 
     /*HERE FINISHES THE DATA DISTRIBUTION PART; FROM HERE THERE ARE THE ACTUAL COMPUTATIONS*/
 
     day = 30;
-    month=12;
+    month = 12;
     year = 2019;
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
-        printf("\n\n\n\n\n\n\n\n");
         char ciao;
-        if(rank == 0) {
+        /* if(rank == 0) {
             scanf("%c", &ciao);
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
+        } */
+        //MPI_Barrier(MPI_COMM_WORLD);
 
         //moving average and percentage increase
         if(rank==0){ //master
@@ -321,11 +324,13 @@ int main(int argc, char **argv) {
             char *name = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
             char *dateString = malloc(sizeof(char)*11);
             sprintf(dateString, "%d,%d,%d", day,month,year);
-            for(int i=0;i<num_slaves;i++){
-                MPI_Send(dateString,10,MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
+            printf("\n\n[MASTER]: Current date: %s.\n", dateString);
+            for(int i=1;i<=num_slaves;i++){
+                MPI_Send(dateString,11,MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
+                //--printf("[MASTER]: Sending date %s to slave %d.\n", dateString, i);
             }
             for(int i=0;i<masterData.count;i++){
-                MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*2,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*4,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                 printf("[MASTER]: %s\n", line);
                 
                 strcpy(name,getfield(line,1,rank)); //get the country name
@@ -341,10 +346,11 @@ int main(int argc, char **argv) {
         } else { //slaves
             //Moving average computation and percentage increase computation
             char *dateString = malloc(sizeof(char)*11);
-            MPI_Recv(dateString,10,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
+            MPI_Recv(dateString,11,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
             day = atoi(getfield(dateString,1,rank));
             month = atoi(getfield(dateString,2,rank));
             year = atoi(getfield(dateString,3,rank));
+            //--printf("[Slave %d]: received date %d-%d-%d. Slvaedata.count is %d\n", rank, day, month, year, slaveData.count);
             free(dateString);
 
             for(int i=0;i<slaveData.count;i++){ //for each country
@@ -370,6 +376,9 @@ int main(int argc, char **argv) {
                     country->percentageIncreaseMA = newMovingAverage/country->movingAverage;
                     country->movingAverage = newMovingAverage;
                 }
+                else {
+                    //--printf("[Slave %d]: date not present. Day: %d %d %d, index: %d\n", rank, day, month, year, country->index);
+                }
 
                 //convert values into a single string, separated by ","
                 char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
@@ -388,7 +397,8 @@ int main(int argc, char **argv) {
                 strcat(stringToSend,"\0");
 
 
-                MPI_Send(stringToSend,strlen(stringToSend),MPI_CHAR,0,1,MPI_COMM_WORLD);
+                MPI_Send(stringToSend,strlen(stringToSend)+1,MPI_CHAR,0,1,MPI_COMM_WORLD);
+                //--printf("[Slave %d]: sending %s to master.\n", rank, stringToSend);
                 free(stringToSend);
                 free(tmp);
             }
@@ -404,6 +414,7 @@ int main(int argc, char **argv) {
         }*/
 
     }
+    //--printf("[NODE %d]: end of loop.\n", rank);
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize(); // Finalize MPI

@@ -1,15 +1,15 @@
 import csv
 import sys
 
-NUMBER_OF_COUNTRIES = 6
-DAYS_PER_COUNTRY = 10
+NUMBER_OF_COUNTRIES = 10
+DAYS_PER_COUNTRY = 7
 
 with open('files/input.csv', newline='') as csvfile:
     data = csv.reader(csvfile, delimiter=',', quotechar='|')
 
-    output = ""
     prevCountry = ""
-    next(data) # Skip the first line (header)
+    header = next(data) # Save the first line (header)
+    output = ','.join(header) + '\n'
     
     row = next(data)
     for i in range(NUMBER_OF_COUNTRIES):
