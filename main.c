@@ -1,7 +1,6 @@
 /*SPECIFICHE: il master invia uno per uno le righe -> quando vede che è cambiato il paese, manda allo slave
 un messaggio con scritto "end". Quando poi il master finisce di mandare a tutti gli slave, allora manda a tutti
 un messaggio con scritto "totalend"*/
-/*TODO: non resettare l'index a riga 259 e leggere invece i dati dal fondo di inputData[]*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,8 +170,8 @@ void nextDate(int *day, int *month, int *year){
     }
 }
 
-//TODO: è una ricerca binaria -> magari ottimizziamo la funzione cambiando algoritmo
-//get the index of the required state from masterData.countries
+//get the index of the required state from masterData.countries - binary search
+//TODO: better search algorithm
 int getIndex(char *name, MasterData masterData){
     int low = 0;
     int high = masterData.count-1;
