@@ -114,16 +114,6 @@ void setData(char* line, SlaveData* slaveData,int rank){
     return;
 }
 
-//creation of hash key
-unsigned long create_key(char *str) {
-    unsigned long hash = 5381;
-    int c;
-    while ((c = *str++) != '\0') {
-        hash = ((hash << 5) + hash) + c;
-    }
-    return hash;
-}
-
 //computes the next date
 void nextDate(int *day, int *month, int *year){
     int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
