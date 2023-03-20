@@ -12,7 +12,7 @@ un messaggio con scritto "totalend"*/
 #define MAX_LINE_LEN 2048
 #define NUM_COUNTRIES 214
 #define MAX_COUNTRYNAME_LENGTH 50
-#define TOP_N 10
+#define TOP_N 50
 
 /*------------------Master's data structures--------------*/
 typedef struct {
@@ -414,7 +414,8 @@ int main(int argc, char **argv) {
                     }
                     newMovingAverage/= (float) consideredDays;
 
-                    country->percentageIncreaseMA = country->movingAverage!=0.0 ? country->movingAverage : 1.0;
+                    country->percentageIncreaseMA = country->movingAverage!=0.0 ? (newMovingAverage/country->movingAverage) : newMovingAverage;
+                                        //done to avoid dividing by 0 the first time (the 1st time, it goes to newMovingAverage, then it's always the 1st choice)
                     country->movingAverage = newMovingAverage;
                 }
                 else {
