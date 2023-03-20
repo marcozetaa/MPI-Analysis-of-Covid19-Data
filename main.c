@@ -12,7 +12,7 @@ un messaggio con scritto "totalend"*/
 #define MAX_LINE_LEN 2048
 #define NUM_COUNTRIES 214
 #define MAX_COUNTRYNAME_LENGTH 50
-#define TOP_N 5
+#define TOP_N 10
 
 /*------------------Master's data structures--------------*/
 typedef struct {
@@ -94,7 +94,7 @@ void printSlaveData(SlaveData slaveData){
     year = slaveData.countries[c].inputData[ind].year;
     cases = slaveData.countries[c].inputData[ind].cases;
 
-    printf("Line: %s,%d/%d/%d,%d\n",str,day,month,year,cases);
+    //printf("Line: %s,%d/%d/%d,%d\n",str,day,month,year,cases);
 }
 
 //save the received data inside the slave's struct
@@ -362,21 +362,19 @@ int main(int argc, char **argv) {
         //get the index ready for reading the data
         for(int i=0;i<slaveData.count;i++){
             slaveData.countries[i].index -= 1;
-            printf("[Slave %d]: index of country %d is %d.\n", rank, i, slaveData.countries[i].index);
+            //printf("[Slave %d]: index of country %d is %d.\n", rank, i, slaveData.countries[i].index);
         }
     }
 
     /*HERE FINISHES THE DATA DISTRIBUTION PART; FROM HERE THERE ARE THE ACTUAL COMPUTATIONS*/
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(rank==0) printf("\n\n\n\n\n\n\n\n\n\n\n");
+    //MPI_Barrier(MPI_COMM_WORLD);
+    //if(rank==0) printf("\n\n\n\n\n\n\n\n\n\n\n");
 
     day = 30;
     month = 12;
     year = 2019;
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
-        //TODO: this barrier might be useless: slaves wait anyway at the Recv for the new date
-        MPI_Barrier(MPI_COMM_WORLD);    //synchronize day by day
 
         //moving average and percentage increase
         if(rank==0){ //master
