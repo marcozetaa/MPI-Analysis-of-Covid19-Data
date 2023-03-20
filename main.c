@@ -60,26 +60,6 @@ typedef struct {
 /*---------------------------FUNCTIONS--------------------*/
 //get csv columns[num]
 //columns are numbered from 1
-/*const char* getfield(char* line, int num,int rank) {
-
-    char* aux;
-    const char* tok;
-
-    aux = malloc(sizeof(char)*MAX_LINE_LEN);
-    strcpy(aux,line);
-
-    //printf("[NODE %d] Filed took = %s\n",rank,aux);
-
-    for (tok = strtok(aux, ","); tok && *tok; tok = strtok(NULL, ",\n")){
-        if (!--num){
-            free(aux);
-            return tok;
-        }
-    }
-
-    free(aux);
-    return NULL;
-}*/
 char* getfield(char* line, int num, int rank) {
     char* aux;
     char* tok;
@@ -292,7 +272,7 @@ int main(int argc, char **argv) {
         }
 
 
-        FILE *fp = fopen("files/reduced-dataset.csv", "r");
+        FILE *fp = fopen("files/input.csv", "r");
         if (fp == NULL) {
             printf("[MASTER] Error: cannot open file.\n");
             exit(1);
@@ -387,16 +367,15 @@ int main(int argc, char **argv) {
     }
 
     /*HERE FINISHES THE DATA DISTRIBUTION PART; FROM HERE THERE ARE THE ACTUAL COMPUTATIONS*/
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank==0) printf("\n\n\n\n\n\n\n\n\n\n\n");
 
     day = 30;
     month = 12;
     year = 2019;
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
-        /* char ciao;
-        if(rank == 0) {
-            scanf("%c", &ciao);
-        } */
+        //TODO: this barrier might be useless: slaves wait anyway at the Recv for the new date
         MPI_Barrier(MPI_COMM_WORLD);    //synchronize day by day
 
         //moving average and percentage increase
@@ -455,7 +434,7 @@ int main(int argc, char **argv) {
                     }
                     newMovingAverage/= (float) consideredDays;
 
-                    country->percentageIncreaseMA = newMovingAverage/country->movingAverage;
+                    country->percentageIncreaseMA = country->movingAverage!=0.0 ? country->movingAverage : 1.0;
                     country->movingAverage = newMovingAverage;
                 }
                 else {
