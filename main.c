@@ -119,21 +119,17 @@ void nextDate(int *day, int *month, int *year){
     int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
     *day = *day +1;
-    if (( *month == 2 ) && (*day == 29))
-    {
+    if (( *month == 2 ) && (*day == 29)){
         // Leap year checking, if yes, Feb is 29 days.
-        if(*year % 400 == 0 || (*year % 100 != 0 && *year % 4 == 0))
-        {
+        if(*year % 400 == 0 || (*year % 100 != 0 && *year % 4 == 0)){
             daysInMonth[1] = 29;
         }
     }
 
-    if (*day > daysInMonth[*month -1])
-    {
+    if (*day > daysInMonth[*month -1]){
         *day = 1;
         *month = *month +1;
-        if (*month > 12)
-        {
+        if (*month > 12){
             *month = 1;
             *year = *year +1;
         }
@@ -270,7 +266,6 @@ int main(int argc, char **argv) {
 
         char line[MAX_LINE_LEN];
         char str[MAX_COUNTRYNAME_LENGTH];
-
         char* lastCountry = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH); // allocate memory for lastCountry
         int dest = 0;
 
@@ -281,20 +276,17 @@ int main(int argc, char **argv) {
             char* buffer = strdup(line);
 
             strcpy(str, getfield(line,7,rank)); // Extract the field "Country" from the line
-
             if(strcmp(lastCountry, str) != 0){ // if the country has changed
 
                 if(masterData.count!=0) MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // Send the end line to the destination process
 
                 strcpy(lastCountry, str); // copy the value of str to lastCountry
-
                 dest = (dest + 1) % size == 0 ? 1 : (dest + 1) % size;
                 strcpy(masterData.countries[masterData.count].countryName,lastCountry);
                 masterData.count++;
             }
 
             MPI_Send(buffer, MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD);
-
             free(buffer);
         }
 
