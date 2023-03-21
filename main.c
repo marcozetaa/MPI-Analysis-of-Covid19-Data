@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
             strcpy(str, getfield(line,7,rank)); // Extract the field "Country" from the line
             if(strcmp(lastCountry, str) != 0){ // if the country has changed
 
-                if(masterData.count!=0) MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // Send the end line to the destination process
+                if(masterData.count!=0) MPI_Send("end", 4, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // Send the end line to the destination process
 
                 strcpy(lastCountry, str); // copy the value of str to lastCountry
                 dest = (dest + 1) % size == 0 ? 1 : (dest + 1) % size;
@@ -286,13 +286,13 @@ int main(int argc, char **argv) {
                 masterData.count++;
             }
 
-            MPI_Send(buffer, MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD);
+            MPI_Send(buffer, strlen(buffer)+1, MPI_CHAR, dest, 0, MPI_COMM_WORLD);
             free(buffer);
         }
 
-        MPI_Send("end", MAX_LINE_LEN, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // After end of file we need to send an "end" message to the last slave because this was not sent in the loop (no country change happened) 
+        MPI_Send("end", 4, MPI_CHAR, dest, 0, MPI_COMM_WORLD); // After end of file we need to send an "end" message to the last slave because this was not sent in the loop (no country change happened) 
         for( int i=1; i<=num_slaves; i++){
-            MPI_Send("totalend", MAX_LINE_LEN, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
+            MPI_Send("totalend", 9, MPI_CHAR, i, 0, MPI_COMM_WORLD); // Send the end line to the destination process
         }
 
         fclose(fp); // Close the input file
