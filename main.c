@@ -367,11 +367,11 @@ int main(int argc, char **argv) {
             sprintf(dateString, "%d,%d,%d", day,month,year);
             printf("\n\n[MASTER]: Current date: %s.\n", dateString);
             for(int i=1;i<=num_slaves;i++){
-                MPI_Send(dateString,11,MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
+                MPI_Send(dateString,strlen(dateString)+1,MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
                 //--printf("[MASTER]: Sending date %s to slave %d.\n", dateString, i);
             }
             for(int i=0;i<masterData.count;i++){
-                MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*4,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*2,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                 printf("[MASTER]: %s\n", line);
                 
                 strcpy(name,getfield(line,1,rank)); //get the country name
@@ -428,6 +428,7 @@ int main(int argc, char **argv) {
 
                 MPI_Send(stringToSend,strlen(stringToSend)+1,MPI_CHAR,0,1,MPI_COMM_WORLD);
                 //--printf("[Slave %d]: sending %s to master.\n", rank, stringToSend);
+
                 free(stringToSend);
             }
         }
