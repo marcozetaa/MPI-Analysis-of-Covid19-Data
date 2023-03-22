@@ -12,7 +12,7 @@ un messaggio con scritto "totalend"*/
 #define MAX_LINE_LEN 2048
 #define NUM_COUNTRIES 214
 #define MAX_COUNTRYNAME_LENGTH 50
-#define TOP_N 50
+#define TOP_N 10
 
 /*------------------Master's data structures--------------*/
 typedef struct {
@@ -424,25 +424,11 @@ int main(int argc, char **argv) {
 
                 //convert values into a single string, separated by ","
                 char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
-                strcpy(stringToSend,"");
-                char* tmp = malloc(sizeof(char)*10);
-
-                strcat(stringToSend,country->countryName);
-                strcat(stringToSend,",");
-
-                gcvt(country->movingAverage,8,tmp);
-                strcat(stringToSend,tmp);
-                strcat(stringToSend,",");
-                
-                gcvt(country->percentageIncreaseMA,8,tmp);
-                strcat(stringToSend,tmp);
-                strcat(stringToSend,"\0");
-
+                sprintf(stringToSend, "%s,%f,%f", country->countryName,country->movingAverage,country->percentageIncreaseMA);
 
                 MPI_Send(stringToSend,strlen(stringToSend)+1,MPI_CHAR,0,1,MPI_COMM_WORLD);
                 //--printf("[Slave %d]: sending %s to master.\n", rank, stringToSend);
                 free(stringToSend);
-                free(tmp);
             }
         }
 
