@@ -365,6 +365,7 @@ void top_nComputation(MasterData masterData, int day, int month, int year){
                 }
             }
         }
+
     }
 
     //sorting algorithm - bubble sort
@@ -443,12 +444,15 @@ int main(int argc, char **argv) {
 
     /*----------HERE FINISHES THE DATA DISTRIBUTION PART. FROM HERE THERE ARE THE ACTUAL COMPUTATIONS-----------------*/
 
-    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     //if(rank==0) printf("\n\n\n\n\n\n\n\n\n\n\n");
 
     int day = 7;
     int month = 12;
     int year = 2020;
+
+    char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
+    char *dateString = malloc(sizeof(char)*11);
 
     while(!(day==14 && month==12 && year==2020)){ //until the end of the dataset
 
@@ -457,13 +461,13 @@ int main(int argc, char **argv) {
 
             nextDate(&day,&month,&year);
 
-            char *line = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
-            char *name = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
-            char *dateString = malloc(sizeof(char)*11);
+            char line[5000];
+            char name[50];
+            char dateString[100];
 
-            //sprintf(dateString, "%d,%d,%d", day,month,year);
+            snprintf(dateString,sizeof(dateString), "%d,%d,%d", day,month,year);
 
-            dateString = "1,1,1";
+            //dateString = "1,1,1";
 
             //printf("\n\n[MASTER]: Current date: %s.\n", dateString);
 
@@ -474,7 +478,7 @@ int main(int argc, char **argv) {
 
             for(int i=0;i<masterData.count;i++){
 
-                MPI_Recv(line,MAX_COUNTRYNAME_LENGTH*2,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                MPI_Recv(line,sizeof(line)+1,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
                 strcpy(name,getCol(line,1,rank)); //get the country name
 
@@ -486,15 +490,15 @@ int main(int argc, char **argv) {
 
             //printf("[MASTER]: %s\n", name);
 
-            free(dateString);
-            free(name);
-            free(line);
+
+            //free(dateString);
+            //free(name);
 
         } else { //slaves
 
             //Moving average computation and percentage increase computation
 
-            char *dateString = malloc(sizeof(char)*11);
+
 
             MPI_Recv(dateString,11,MPI_CHAR,MPI_ANY_SOURCE,3,MPI_COMM_WORLD,MPI_STATUS_IGNORE); // Receive the current date from master
 
@@ -504,7 +508,7 @@ int main(int argc, char **argv) {
 
            //printf("[Slave %d]: received date %d-%d-%d.\n", rank, day, month, year);
 
-            free(dateString);
+
 
 
             for(int i=0;i<slaveData.count;i++){ //for each country
@@ -514,23 +518,28 @@ int main(int argc, char **argv) {
                 updateCountry(country,day, month, year);
 
                 //convert values into a single string, separated by ","
-                char* stringToSend = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH*2);
-                //sprintf(stringToSend,"%s,%f,%f", country->countryName,country->movingAverage,country->percentageIncreaseMA);
 
-                stringToSend = "Country,3.0,2.2";
+                sprintf(stringToSend,"%s,%f,%f", country->countryName,country->movingAverage,country->percentageIncreaseMA);
+
+
+                //stringToSend = "Country,3.0,2.2";
 
                 MPI_Send(stringToSend,strlen(stringToSend)+1,MPI_CHAR,0,1,MPI_COMM_WORLD);
 
 
-                //free(stringToSend);
+
 
             }
+
         }
 
         //top10 done without saving any state
-        //if(rank==0) top_nComputation(masterData,day,month,year);
+        if(rank==0) top_nComputation(masterData,day,month,year);
 
     }
+
+    free(stringToSend);
+    free(dateString);
 
     printf("[NODE %d]: end of loop.\n", rank);
 
