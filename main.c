@@ -552,15 +552,15 @@ int main(int argc, char **argv) {
         master_function(num_slaves);
     } else {
         // Slave processes
-        SlaveData* slave_data;
+        SlaveData slave_data;
 
         // Initialize Slave Process
-        initializeSlaveData(slave_data,countries_per_slave);
+        initializeSlaveData(&slave_data,countries_per_slave);
 
-        slave_function(slave_data,rank,countries_per_slave);
+        slave_function(&slave_data,rank,countries_per_slave);
 
         // Free memory
-        deleteSlaveData(slave_data,countries_per_slave);
+        deleteSlaveData(&slave_data,countries_per_slave);
     }
 
     MPI_Finalize();
