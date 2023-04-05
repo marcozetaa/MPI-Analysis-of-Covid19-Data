@@ -13,32 +13,34 @@
 extern char* strdup(const char*);
 
 typedef struct {
-    int day, month, year;
-    int cases;
+    int      day, month, year;
+    int      cases;
 } data;
 
 typedef struct {
-    char* countryName;
+    char*    countryName;
 
-    data inputData[365]; //saves all the data in the file
-    int index;  //used during data receival and computations: keeps count of where in inputData we are at
+    data     inputData[365]; //saves all the data in the file
+    int      index;  //used during data receival and computations: keeps count of where in inputData we are at
 
-    float movingAverage;    //7-days moving average
-    float percentageIncreaseMA;
+    float    movingAverage;    //7-days moving average
+    float    percentageIncreaseMA;
+    int      tot_cases;
 
-    int window[7];       //values on which the moving average is computed
-    int windowIndex; //next index to use in the sliding window
+    int      window[7];       //values on which the moving average is computed
+    int      windowIndex; //next index to use in the sliding window
 } Country;
 
 // Entry for slave
 typedef struct {
-    int count; //number of countries in the slave
+    int      count; //number of countries in the slave
     Country* countries;
 } SlaveData;
 
 typedef struct {
-    char* countryName;
-    float percentageIncreaseMA;
+    char*   countryName;
+    float   percentageIncreaseMA;
+    int     cases;
 } CountryResults;
 
 // Insertion Sort algorithm
@@ -165,6 +167,7 @@ void initializeSlaveData(SlaveData* slaveData, int countries_per_slave){
 
         slaveData->countries[i].countryName = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
         slaveData->countries[i].index = 0;
+        slaveData->countries[i].tot_cases = 0;
 
         for(int j=0;j<7;j++){
             slaveData->countries[i].window[j] = -1;
@@ -212,6 +215,7 @@ void updateCountry(Country* country, int day, int month, int year){
         country->percentageIncreaseMA = country->movingAverage!=0.0 ? (newMovingAverage/country->movingAverage) : newMovingAverage;
         //done to avoid dividing by 0 the first time (the 1st time, it goes to newMovingAverage, then it's always the 1st choice)
         country->movingAverage = newMovingAverage;
+        country->tot_cases += country->inputData[country->index].cases;
     }
     else {
         //printf("--------------------------------\n");
@@ -223,7 +227,7 @@ void updateCountry(Country* country, int day, int month, int year){
 
 }
 
-void computeTopN(CountryResults* countries, int country_count, int day, int month, int year){
+void printResults(CountryResults* countries, int country_count, int day, int month, int year){
 
     if(country_count < TOP_N){
         printf("[MASTER] Error: Ranking does not have sufficient countries\n");
@@ -233,11 +237,19 @@ void computeTopN(CountryResults* countries, int country_count, int day, int mont
     printf("\n");
     printf("---------------------------------------------------------------\n");
 
+    printf("\nCountries Cases and Percentage Increase %d/%d/%d\n",day,month,year);
+    for(int i=0;i<country_count;i++){
+        printf("%d) %s: %d Cases -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].cases,countries[i].percentageIncreaseMA);
+    }
+
+    printf("\n");
+    printf("---------------------------------------------------------------\n");
+
     insertionSort(countries,country_count);
 
     printf("\nTOP %d %d/%d/%d\n",TOP_N,day,month,year);
     for(int i=0;i<TOP_N;i++){
-        printf("%d) %s -> %.2f\n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].percentageIncreaseMA);
+        printf("%d) %s: %d Cases -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].cases,countries[country_count-i-1].percentageIncreaseMA);
     }
 
     printf("\n");
@@ -338,7 +350,7 @@ void slave_function(SlaveData* slave_data, int rank, int countries) {
 
             updateCountry(country, day, month, year);
 
-            sprintf(msg, "%s,%.2f", country->countryName, country->percentageIncreaseMA);
+            sprintf(msg, "%s,%.2f,%d", country->countryName, country->percentageIncreaseMA,country->tot_cases);
 
             //printf("[NODE %d] Message is: %s\n",rank,msg);
 
@@ -494,13 +506,14 @@ void master_function(int num_processes) {
             // Save country result
             strcpy(countries_results[i].countryName,getCol(buffer,1));
             countries_results[i].percentageIncreaseMA = atof(getCol(buffer,2));
+            countries_results[i].cases = atof(getCol(buffer,3));
         }
 
         // Clean buffer
         memset(&buffer[0], 0, sizeof(buffer));
 
         // Print ranking
-        computeTopN(countries_results,country_count,day,month,year);
+        printResults(countries_results,country_count,day,month,year);
 
         nextDate(&day,&month,&year);
     }
@@ -528,9 +541,8 @@ void master_function(int num_processes) {
     // Clean buffer
     memset(&buffer[0], 0, sizeof(buffer));
 
-
     // Print ranking
-    computeTopN(countries_results,country_count,day,month,year);
+    printResults(countries_results,country_count,day,month,year);
 
     for(int i=0;i<country_count;i++){
         free(countries_results[i].countryName);
