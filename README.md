@@ -1,8 +1,14 @@
 # MPI-Analysis-of-Covid19-Data
+MPI project computing a 7-day moving average and the percentage increase of the moving average of the number of cases, in order to track everyday how every Country is doing. <br><br>
+The dataset we used is from https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide <br>
 
-Project 4 <br>
-Abbiamo il dataset pronto: mandiamo a ogni paese l'intera lista di dati che gli competono e ogni giorno facciamo inviare al processo 0 le statistiche nuove. <br><br>
+Need to have openmpi installed on your machine.
 
-Assumption:
-- il dataset è statico (non viene aggiornato mentre facciamo la computazione)
-- for countries that provide weekly reports, you can assume that the weekly increment is evenly spread across the day of the week. (assumption dei prof)
+## Compile and run the program
+mpicc main.c -o main <br>
+mpirun -np N main <br><br>
+N is the number of processes you want to allow the program to run on.
+
+## Assumptions
+- Need at least N = 2
+- The dataset is the complete one from the website (already downloaded in the repo)
