@@ -12,3 +12,8 @@ N is the number of processes you want to allow the program to run on.
 ## Assumptions
 - Need at least N = 2
 - The dataset is the complete one from the website (already downloaded in the repo)
+
+## Contributors
+- Francesco Scandale
+- Luca Rondini
+- Marco Zanghieri
