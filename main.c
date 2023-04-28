@@ -227,6 +227,7 @@ void updateCountry(Country* country, int day, int month, int year){
 
 }
 
+// Print the number of case of all countries and then prints the TOP N rank
 void printResults(CountryResults* countries, int country_count, int day, int month, int year){
 
     if(country_count < TOP_N){
@@ -370,7 +371,7 @@ void slave_function(SlaveData* slave_data, int rank, int countries) {
 }
 
 void master_function(int num_processes) {
-    int rows_read = 0, slave_rank = 1, start = 0, country_count = 0;
+    int slave_rank = 1, start = 0, country_count = 0;
     int day, month, year, start_day = 32, start_month = 13, start_year = 3000, end_day = 1, end_month = 1, end_year = 1;
     char buffer[MAX_LINE_LEN], msg[MAX_LINE_LEN], country_name[50], current_country_name[50] = "";
 
@@ -417,8 +418,6 @@ void master_function(int num_processes) {
 
         // Send row to slave
         MPI_Send(msg, strlen(msg), MPI_CHAR, slave_rank, 0, MPI_COMM_WORLD);
-
-        rows_read++;
 
         day = atoi(getCol(line,2));
         month = atoi(getCol(line,3));
