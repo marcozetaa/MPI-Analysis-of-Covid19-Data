@@ -309,8 +309,6 @@ void slave_function(SlaveData* slave_data, int rank, int countries) {
         slave_data->countries[i].index -= 1;
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
     //printf("[NODE %d] I have %d countries\n",rank,slave_data->count+1);
 
     // ---------------------------COMPUTATION PART---------------------------
@@ -449,8 +447,6 @@ void master_function(int num_processes) {
     for (int i = 1; i <= num_processes; i++) {
         MPI_Send("END", 4, MPI_CHAR, i, 0, MPI_COMM_WORLD);
     }
-
-    MPI_Barrier(MPI_COMM_WORLD);
 
     // ---------------------------COMPUTATION PART---------------------------
 
