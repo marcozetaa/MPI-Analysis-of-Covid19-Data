@@ -578,8 +578,6 @@ int main(int argc, char **argv) {
         deleteSlaveData(&slave_data,countries_per_slave);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
     // Master computes the elapsed time
     if(rank==0){
         double endtime = MPI_Wtime();
