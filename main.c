@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <time.h>
 #include "mpi.h"
 
 #define NUM_COUNTRIES 214
@@ -555,6 +556,9 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    // Get initial time (used later to check the elapsed time)
+    double starttime = MPI_Wtime();
+
     int num_slaves = size - 1;
     int countries_per_slave = (NUM_COUNTRIES/num_slaves) + 1; //+1 needed to avoid round-down problems
 
@@ -572,6 +576,14 @@ int main(int argc, char **argv) {
 
         // Free memory
         deleteSlaveData(&slave_data,countries_per_slave);
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Master computes the elapsed time
+    if(rank==0){
+        double endtime = MPI_Wtime();
+        printf("\n\nElapsed time -> %f milliseconds\n\n",(endtime-starttime)*1000);
     }
 
     MPI_Finalize();
