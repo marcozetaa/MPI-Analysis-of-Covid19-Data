@@ -1,3 +1,6 @@
+Tests were made without the prints of data, only printing the total time
+(In the program, printResults() calls were commented)
+
 Machines with 2 cores each, 2GB of memory each
 n total cores (m,k)
     m is the local machine (the one running the command)
