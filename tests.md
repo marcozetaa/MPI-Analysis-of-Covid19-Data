@@ -55,13 +55,13 @@ super-reduced-dataset
 reduced-dataset
 - 2 total cores (1,1)
     - 809, 771, 766 milliseconds
-    - Average:  ms
+    - Average: 782 ms
 - 3 total cores (2,1)
     - 675, 599, 651 milliseconds
-    - Average:  ms
+    - Average: 641 ms
 - 4 total cores (2,2)
     - 809, 714, 700 milliseconds
-    - Average:  ms
+    - Average: 741 ms
 
 input
 - 2 total cores (1,1)
@@ -100,19 +100,19 @@ super-reduced-dataset
 reduced-dataset
 - 2 total cores (1,1)
     - 739, 742, 707 milliseconds
-    - Average:  ms
+    - Average: 729 ms
 - 4 total cores (2,2)
     - 860, 725, 747 milliseconds
-    - Average:  ms
+    - Average: 777 ms
 - 4 total cores (3,1)
     - 699, 703, 698 milliseconds
-    - Average:  ms
+    - Average: 700 ms
 - 5 total cores (3,2)
     - 832, 908, 870 milliseconds
-    - Average:  ms
+    - Average: 870 ms
 - 6 total cores (3,3)
     - 1119, 1014, 1126 milliseconds
-    - Average:  ms
+    - Average: 1086 ms
 
 input
 - 2 total cores (1,1)
