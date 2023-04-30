@@ -1,10 +1,45 @@
-Tests were made without the prints of data, only printing the total time
+Tests were made without the prints of data, only printing the total time. <br>
 (In the program, printResults() calls were commented)
 
-Machines with 2 cores each, 2GB of memory each
-n total cores (m,k)
-    m is the local machine (the one running the command)
-    k is the ssh machine
+<br>
+Based on the dataset and systems used, we obtained the following results.
+<br>
+
+------------------------------------------------
+Single machine with 3 cores, 2GB of memory, n total cores used in the computation (m,k)
+- m is the local machine (the one running the command)
+- k is the ssh machine
+<br><br>
+
+super-reduced-dataset
+- 2 cores
+    - 5, 3, 3 milliseconds
+    - Average: 4 ms
+- 3 cores
+    - 2, 3, 2 milliseconds
+    - Average: 2 ms
+
+reduced-dataset
+- 2 cores
+    -  milliseconds
+    - Average:  ms
+- 3 cores
+    -  milliseconds
+    - Average:  ms
+
+input
+- 2 cores
+    - 1244, 1230, 1238 milliseconds
+    - Average: 1237 ms
+- 3 cores
+    - 1352, 1322, 1332 milliseconds
+    - Average: 1335 ms
+
+------------------------------------------------
+Machines with 2 cores each, 2GB of memory each, n total cores used in the computation (m,k)
+- m is the local machine (the one running the command)
+- k is the ssh machine
+<br><br>
 
 super-reduced-dataset
 - 2 total cores (1,1)
@@ -29,10 +64,10 @@ input
     - Average: 2329 ms
 
 ------------------------------------------------
-Machines with 3 cores each, 2GB of memory each
-n total cores (m,k)
-    m is the local machine (the one running the command)
-    k is the ssh machine
+Machines with 3 cores each, 2GB of memory each, n total cores used in the computation (m,k)
+- m is the local machine (the one running the command)
+- k is the ssh machine
+<br><br>
 
 super-reduced-dataset
 - 2 total cores (1,1)
@@ -53,20 +88,20 @@ super-reduced-dataset
 
 reduced-dataset
 - 2 total cores (1,1)
-    - 54, 43, 49 milliseconds
-    - Average: 48 ms
+    -  milliseconds
+    - Average:  ms
 - 4 total cores (2,2)
-    - 82, 66, 70 milliseconds
-    - Average: 72 ms
+    -  milliseconds
+    - Average:  ms
 - 4 total cores (3,1)
-    - 67, 63, 44 milliseconds
-    - Average: 58 ms
+    -  milliseconds
+    - Average:  ms
 - 5 total cores (3,2)
-    - 57, 74, 74 milliseconds
-    - Average: 68 ms
+    -  milliseconds
+    - Average:  ms
 - 6 total cores (3,3)
-    - 106, 82, 90 milliseconds
-    - Average: 92 ms
+    -  milliseconds
+    - Average:  ms
 
 input
 - 2 total cores (1,1)

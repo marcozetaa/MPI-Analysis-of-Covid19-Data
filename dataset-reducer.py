@@ -1,8 +1,8 @@
 import csv
 import sys
 
-NUMBER_OF_COUNTRIES = 10
-DAYS_PER_COUNTRY = 7
+NUMBER_OF_COUNTRIES = 100
+DAYS_PER_COUNTRY = 150
 
 with open('files/input.csv', newline='') as csvfile:
     data = csv.reader(csvfile, delimiter=',', quotechar='|')
@@ -22,7 +22,7 @@ with open('files/input.csv', newline='') as csvfile:
         prevCountry = row[6]
         for j in range(DAYS_PER_COUNTRY):
             if(prevCountry != row[6]):
-                print("Number of days too large for a country")
+                print("Number of days too large for a country -> ", prevCountry)
                 sys.exit()
             output += ','.join(row)
             output += "\n"
@@ -32,7 +32,7 @@ with open('files/input.csv', newline='') as csvfile:
                 print("End of file reached")
                 sys.exit()
     
-    f = open('files/super-reduced-dataset.csv', 'w')
+    f = open('files/reduced-dataset.csv', 'w')
     f.write(output)
     f.close
     print("Done.")
