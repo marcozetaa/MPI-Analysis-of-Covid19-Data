@@ -21,11 +21,11 @@ super-reduced-dataset
 
 reduced-dataset
 - 2 cores
-    -  milliseconds
-    - Average:  ms
+    - 305, 304, 303 milliseconds
+    - Average: 304 ms
 - 3 cores
-    -  milliseconds
-    - Average:  ms
+    - 324, 327, 339 milliseconds
+    - Average: 330 ms
 
 input
 - 2 cores
@@ -45,23 +45,34 @@ super-reduced-dataset
 - 2 total cores (1,1)
     - 26, 37, 30 milliseconds
     - Average: 31 ms
-- 4 total cores (2,2)
-    - 57, 36, 49 milliseconds
-    - Average: 47 ms
 - 3 total cores (2,1)
     - 31, 26, 37 milliseconds
     - Average: 31 ms
+- 4 total cores (2,2)
+    - 57, 36, 49 milliseconds
+    - Average: 47 ms
+
+reduced-dataset
+- 2 total cores (1,1)
+    - 809, 771, 766 milliseconds
+    - Average:  ms
+- 3 total cores (2,1)
+    - 675, 599, 651 milliseconds
+    - Average:  ms
+- 4 total cores (2,2)
+    - 809, 714, 700 milliseconds
+    - Average:  ms
 
 input
 - 2 total cores (1,1)
     - 2784, 2716, 2743 milliseconds
     - Average: 2747 ms
-- 4 total cores (2,2)
-    - 2640, 3022, 2969 milliseconds
-    - Average: 2877 ms
 - 3 total cores (2,1)
     - 2270, 2274, 2443 milliseconds
     - Average: 2329 ms
+- 4 total cores (2,2)
+    - 2640, 3022, 2969 milliseconds
+    - Average: 2877 ms
 
 ------------------------------------------------
 Machines with 3 cores each, 2GB of memory each, n total cores used in the computation (m,k)
@@ -88,19 +99,19 @@ super-reduced-dataset
 
 reduced-dataset
 - 2 total cores (1,1)
-    -  milliseconds
+    - 739, 742, 707 milliseconds
     - Average:  ms
 - 4 total cores (2,2)
-    -  milliseconds
+    - 860, 725, 747 milliseconds
     - Average:  ms
 - 4 total cores (3,1)
-    -  milliseconds
+    - 699, 703, 698 milliseconds
     - Average:  ms
 - 5 total cores (3,2)
-    -  milliseconds
+    - 832, 908, 870 milliseconds
     - Average:  ms
 - 6 total cores (3,3)
-    -  milliseconds
+    - 1119, 1014, 1126 milliseconds
     - Average:  ms
 
 input
