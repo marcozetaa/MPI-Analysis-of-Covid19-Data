@@ -238,7 +238,8 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
 
     printf("\nCountries Cases and Percentage Increase %d/%d/%d\n",day,month,year);
     for(int i=0;i<country_count;i++){
-        if(strcmp(countries[i].countryName,"Afghanistan")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
+        if(strcmp(countries[i].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
+        //printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
     }
 
     printf("\n");
@@ -248,7 +249,8 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
 
     printf("\nTOP %d %d/%d/%d\n",TOP_N,day,month,year);
     for(int i=0;i<TOP_N;i++){
-        if(strcmp(countries[country_count-i-1].countryName,"Afghanistan")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
+        if(strcmp(countries[country_count-i-1].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
+        //printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
     }
 
     printf("\n");
@@ -375,7 +377,7 @@ void master_function(int num_processes) {
 
 
     // Open input file
-    FILE* input_file = fopen("files/super-reduced-dataset.csv", "r");
+    FILE* input_file = fopen("files/reduced-dataset.csv", "r");
     if (input_file == NULL) {
         printf("Error: could not open input file\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
@@ -402,7 +404,7 @@ void master_function(int num_processes) {
 
         snprintf(msg, sizeof(msg),"%s,%s,%s,%s,%s", getCol(line,2), getCol(line,3), getCol(line,4), country_name, getCol(line,5)); // Preparing send message
 
-        if (strcmp(country_name, current_country_name) != 0) {
+        if (strcmp(country_name, current_country_name) != 0) { // When the country changes...
 
             // Switch to next slave
             slave_rank = (slave_rank % num_processes) + 1;
@@ -480,7 +482,7 @@ void master_function(int num_processes) {
     }
 
     // Collect results from slaves and print top 10 countries
-    while(!(day==end_day && month==end_month && year==end_year)){
+    while(!(day==(end_day+1) && month==end_month && year==end_year)){
 
         snprintf(msg, sizeof(msg), "%d,%d,%d", day,month,year);
 
@@ -501,7 +503,7 @@ void master_function(int num_processes) {
             countries_results[i].movingAverage = atof(getCol(buffer,2));
             countries_results[i].percentageIncreaseMA = atof(getCol(buffer,3));
 
-            printf("[MASTER] Data received: %s,%.2f,%.2f\n",countries_results[i].countryName,countries_results[i].movingAverage,countries_results[i].percentageIncreaseMA);
+            //printf("[MASTER] Data received: %s,%.2f,%.2f\n",countries_results[i].countryName,countries_results[i].movingAverage,countries_results[i].percentageIncreaseMA);
         }
 
         // Clean buffer
@@ -512,36 +514,6 @@ void master_function(int num_processes) {
 
         nextDate(&day,&month,&year);
     }
-
-    // Last message to send to the slaves
-    //printf("[MASTER] Sending Date; %d/%d/%d\n",day,month,year);
-
-    snprintf(msg, sizeof(msg), "%d,%d,%d", day,month,year);
-
-    for(int i=1;i<=num_processes;i++){
-        MPI_Send(msg,strlen(msg),MPI_CHAR,i,3,MPI_COMM_WORLD); // send the current date to all the slaves
-    }
-
-    for( int i = 0; i < country_count; i++){
-        // Clean buffer
-        memset(&buffer[0], 0, sizeof(buffer));
-
-        MPI_Recv(buffer,MAX_LINE_LEN,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-
-        // Save country result
-        strcpy(countries_results[i].countryName,getCol(buffer,1));
-        countries_results[i].movingAverage = atof(getCol(buffer,2));
-        countries_results[i].percentageIncreaseMA = atof(getCol(buffer,3));
-
-        printf("[MASTER] Data received: %s,%.2f,%.2f\n",countries_results[i].countryName,countries_results[i].movingAverage,countries_results[i].percentageIncreaseMA);
-
-    }
-
-    // Clean buffer
-    memset(&buffer[0], 0, sizeof(buffer));
-
-    // Print ranking
-    printResults(countries_results,country_count,day,month,year);
 
     for(int i=0;i<country_count;i++){
         free(countries_results[i].countryName);

@@ -6,8 +6,10 @@ Need to have openmpi installed on your machine.
 
 ## Compile and run the program
 mpicc main.c -o main <br>
-mpirun -np N main <br><br>
-N is the number of processes you want to allow the program to run on.
+mpirun -np N main <br>
+N is the number of processes you want to allow the program to run on. <br><br>
+To run it on multiple hosts, they have to be connected via passwordless ssh and have the repo installed in the same place in the file system. It's also required that the OS be the same and the binaries compiled with the same compiler. After compiling on each machine, run (having N=M+K): <br>
+mpirun -np N --host hostname1:M,hostname2:K main <br>
 
 ## Assumptions
 - Need at least N = 2
