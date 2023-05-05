@@ -26,7 +26,6 @@ typedef struct {
 
     float    movingAverage;    //7-days moving average
     float    percentageIncreaseMA;
-    int      tot_cases;
 
     int      window[7];       //values on which the moving average is computed
     int      windowIndex; //next index to use in the sliding window
@@ -41,7 +40,7 @@ typedef struct {
 typedef struct {
     char*   countryName;
     float   percentageIncreaseMA;
-    int     cases;
+    float     movingAverage;
 } CountryResults;
 
 // Insertion Sort algorithm
@@ -168,7 +167,6 @@ void initializeSlaveData(SlaveData* slaveData, int countries_per_slave){
 
         slaveData->countries[i].countryName = malloc(sizeof(char)*MAX_COUNTRYNAME_LENGTH);
         slaveData->countries[i].index = 0;
-        slaveData->countries[i].tot_cases = 0;
 
         for(int j=0;j<7;j++){
             slaveData->countries[i].window[j] = -1;
@@ -216,7 +214,6 @@ void updateCountry(Country* country, int day, int month, int year){
         country->percentageIncreaseMA = country->movingAverage!=0.0 ? (newMovingAverage/country->movingAverage) : newMovingAverage;
         //done to avoid dividing by 0 the first time (the 1st time, it goes to newMovingAverage, then it's always the 1st choice)
         country->movingAverage = newMovingAverage;
-        country->tot_cases += country->inputData[country->index].cases;
     }
     else {
         //printf("--------------------------------\n");
@@ -241,7 +238,7 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
 
     printf("\nCountries Cases and Percentage Increase %d/%d/%d\n",day,month,year);
     for(int i=0;i<country_count;i++){
-        printf("%d) %s: %d Cases -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].cases,countries[i].percentageIncreaseMA);
+        if(strcmp(countries[i].countryName,"Afghanistan")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
     }
 
     printf("\n");
@@ -251,7 +248,7 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
 
     printf("\nTOP %d %d/%d/%d\n",TOP_N,day,month,year);
     for(int i=0;i<TOP_N;i++){
-        printf("%d) %s: %d Cases -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].cases,countries[country_count-i-1].percentageIncreaseMA);
+        if(strcmp(countries[country_count-i-1].countryName,"Afghanistan")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
     }
 
     printf("\n");
@@ -342,6 +339,8 @@ void slave_function(SlaveData* slave_data, int rank, int countries) {
         month = atoi(getCol(msg, 2));
         year = atoi(getCol(msg, 3));
 
+        //printf("\n\nDATE: %d/%d/%d\n",day,month,year);
+
         for (int i = 0; i <= slave_data->count; i++) {
 
             Country *country = &slave_data->countries[i];
@@ -350,7 +349,7 @@ void slave_function(SlaveData* slave_data, int rank, int countries) {
 
             updateCountry(country, day, month, year);
 
-            sprintf(msg, "%s,%.2f,%d", country->countryName, country->percentageIncreaseMA,country->tot_cases);
+            sprintf(msg, "%s,%.2f,%.2f",country->countryName,country->movingAverage,country->percentageIncreaseMA);
 
             //printf("[NODE %d] Message is: %s\n",rank,msg);
 
@@ -376,7 +375,7 @@ void master_function(int num_processes) {
 
 
     // Open input file
-    FILE* input_file = fopen("files/input.csv", "r");
+    FILE* input_file = fopen("files/super-reduced-dataset.csv", "r");
     if (input_file == NULL) {
         printf("Error: could not open input file\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
@@ -497,12 +496,12 @@ void master_function(int num_processes) {
 
             MPI_Recv(buffer,MAX_LINE_LEN,MPI_CHAR,MPI_ANY_SOURCE,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
-            //printf("[MASTER] Received msg: %s out of %d\n",buffer,i);
-
             // Save country result
             strcpy(countries_results[i].countryName,getCol(buffer,1));
-            countries_results[i].percentageIncreaseMA = atof(getCol(buffer,2));
-            countries_results[i].cases = atof(getCol(buffer,3));
+            countries_results[i].movingAverage = atof(getCol(buffer,2));
+            countries_results[i].percentageIncreaseMA = atof(getCol(buffer,3));
+
+            printf("[MASTER] Data received: %s,%.2f,%.2f\n",countries_results[i].countryName,countries_results[i].movingAverage,countries_results[i].percentageIncreaseMA);
         }
 
         // Clean buffer
@@ -531,7 +530,11 @@ void master_function(int num_processes) {
 
         // Save country result
         strcpy(countries_results[i].countryName,getCol(buffer,1));
-        countries_results[i].percentageIncreaseMA = atof(getCol(buffer,2));
+        countries_results[i].movingAverage = atof(getCol(buffer,2));
+        countries_results[i].percentageIncreaseMA = atof(getCol(buffer,3));
+
+        printf("[MASTER] Data received: %s,%.2f,%.2f\n",countries_results[i].countryName,countries_results[i].movingAverage,countries_results[i].percentageIncreaseMA);
+
     }
 
     // Clean buffer
