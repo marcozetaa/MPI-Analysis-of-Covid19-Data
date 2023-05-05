@@ -212,7 +212,7 @@ void updateCountry(Country* country, int day, int month, int year){
         newMovingAverage/= (float) consideredDays;
 
         country->percentageIncreaseMA = country->movingAverage!=0.0 ? (newMovingAverage/country->movingAverage) : newMovingAverage;
-        //done to avoid dividing by 0 the first time (the 1st time, it goes to newMovingAverage, then it's always the 1st choice)
+        //the above is done to avoid dividing by 0 the first time or when the movingAverage is 0
         country->movingAverage = newMovingAverage;
     }
     else {
@@ -238,8 +238,8 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
 
     printf("\nCountries Cases and Percentage Increase %d/%d/%d\n",day,month,year);
     for(int i=0;i<country_count;i++){
-        if(strcmp(countries[i].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
-        //printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
+        //if(strcmp(countries[i].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
+        printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
     }
 
     printf("\n");
@@ -249,8 +249,8 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
 
     printf("\nTOP %d %d/%d/%d\n",TOP_N,day,month,year);
     for(int i=0;i<TOP_N;i++){
-        if(strcmp(countries[country_count-i-1].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
-        //printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
+        //if(strcmp(countries[country_count-i-1].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
+        printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
     }
 
     printf("\n");
@@ -377,7 +377,7 @@ void master_function(int num_processes) {
 
 
     // Open input file
-    FILE* input_file = fopen("files/reduced-dataset.csv", "r");
+    FILE* input_file = fopen("files/input.csv", "r");
     if (input_file == NULL) {
         printf("Error: could not open input file\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
