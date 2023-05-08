@@ -211,7 +211,7 @@ void updateCountry(Country* country, int day, int month, int year){
 
         newMovingAverage/= (float) consideredDays;
 
-        country->percentageIncreaseMA = country->movingAverage!=0.0 ? ((newMovingAverage - country->movingAverage/country->movingAverage)*100) : 0.0;
+        country->percentageIncreaseMA = country->movingAverage!=0.0 ? (((newMovingAverage - country->movingAverage)/country->movingAverage)*100) : 0.0;
         //the above is done to avoid dividing by 0 the first time or when the movingAverage is 0
         country->movingAverage = newMovingAverage;
     }
