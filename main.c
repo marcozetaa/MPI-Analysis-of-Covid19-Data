@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
     char*   countryName;
     float   percentageIncreaseMA;
-    float     movingAverage;
+    float   movingAverage;
 } CountryResults;
 
 // Insertion Sort algorithm
@@ -239,7 +239,12 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
     printf("\nCountries Cases and Percentage Increase %d/%d/%d\n",day,month,year);
     for(int i=0;i<country_count;i++){
         //if(strcmp(countries[i].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
-        printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
+        if(countries[i].percentageIncreaseMA >= 0.0){
+            printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
+        }
+        else{
+            printf("%d) %s: %.2f Moving Average -> %.2f%% \n",i+1,countries[i].countryName,countries[i].movingAverage,countries[i].percentageIncreaseMA);
+        }
     }
 
     printf("\n");
@@ -250,7 +255,12 @@ void printResults(CountryResults* countries, int country_count, int day, int mon
     printf("\nTOP %d %d/%d/%d\n",TOP_N,day,month,year);
     for(int i=0;i<TOP_N;i++){
         //if(strcmp(countries[country_count-i-1].countryName,"Haiti")==0) printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
-        printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
+        if(countries[i].percentageIncreaseMA >= 0.0){
+            printf("%d) %s: %.2f Moving Average -> +%.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
+        }
+        else{
+            printf("%d) %s: %.2f Moving Average -> %.2f%% \n",i+1,countries[country_count-i-1].countryName,countries[country_count-i-1].movingAverage,countries[country_count-i-1].percentageIncreaseMA);
+        }
     }
 
     printf("\n");
