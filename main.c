@@ -380,7 +380,8 @@ void slave_function(SlaveData* slave_data, int rank, int countries) {
 
 }
 
-void master_function(int num_processes) {
+void master_function(int num_processes,double starttime) {
+    int rank=0;
     int slave_rank = 1, start = 0, country_count = 0;
     int day, month, year, start_day = 32, start_month = 13, start_year = 3000, end_day = 1, end_month = 1, end_year = 1;
     char buffer[MAX_LINE_LEN], msg[MAX_LINE_LEN], country_name[50], current_country_name[50] = "";
@@ -459,6 +460,12 @@ void master_function(int num_processes) {
         MPI_Send("END", 4, MPI_CHAR, i, 0, MPI_COMM_WORLD);
     }
 
+    // Master computes the elapsed time
+    if(rank==0){
+        double endtime = MPI_Wtime();
+        printf("\n\nElapsed time -> %f milliseconds\n\n",(endtime-starttime)*1000);
+    }
+
     // ---------------------------COMPUTATION PART---------------------------
 
     // Clean msg
@@ -520,7 +527,7 @@ void master_function(int num_processes) {
         memset(&buffer[0], 0, sizeof(buffer));
 
         // Print ranking
-        printResults(countries_results,country_count,day,month,year);
+        //printResults(countries_results,country_count,day,month,year);
 
         nextDate(&day,&month,&year);
     }
@@ -545,7 +552,7 @@ int main(int argc, char **argv) {
 
     if (rank == 0) {
         // Master process
-        master_function(num_slaves);
+        master_function(num_slaves,starttime);
     } else {
         // Slave processes
         SlaveData slave_data;
